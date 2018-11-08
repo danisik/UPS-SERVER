@@ -6,6 +6,7 @@ typedef struct the_field field;
 
 struct the_client {
 	char *name;
+	int socket_ID;
 };
 
 struct the_clients {
@@ -27,6 +28,7 @@ struct the_fields {
 void create_clients(clients **array_clients);
 void create_client(client **cl, char *name, int socket_ID);
 void add_client(clients **array_clients, char *name, int socket_ID);
+void client_remove(clients **array_clients, int socket_ID);
 
 int name_exists (clients *array_clients, char *name);
 void send_message(int client_socket, char *message);

@@ -17,7 +17,7 @@ int main (void)
 {
 
 	int name_length = 20;
-	int max_players = 32;
+	int max_players = 2;
 
 	clients *array_clients;	
 	create_clients(&array_clients);
@@ -108,13 +108,18 @@ int main (void)
 							tok = strtok(NULL, ";");
 							char *name = tok;
 		
-							if (name_exists(array_clients, name) == 0) {
-								add_client(&array_clients, name, fd);
-								printf("Jmeno: %s\n", array_clients -> clients[array_clients -> clients_count -1] -> name);
-								send_message(fd, "login_ok\n");							
+							if (name_exists(array_clients, name) == 0) {								
+								if ((array_clients -> clients_count) < (max_players - 1)) {
+									add_client(&array_clients, name, fd);
+									printf("Jmeno: %s\n", array_clients -> clients[array_clients -> clients_count -1] -> name);
+									send_message(fd, "login_ok;\n");					
+								}
+								else {
+									send_message(fd, "login_false;Too much Players online;\n");
+								}		
 							}
 							else {
-								send_message(fd, "login_false\n");
+								send_message(fd, "login_false;This name is already taken;\n");
 							} 
 						}
 						else if (strcmp(type_message, "client_move") == 0) {
@@ -137,6 +142,7 @@ int main (void)
 					{
 						close(fd);
 						FD_CLR(fd, &client_socks);
+						client_remove(&array_clients, fd);
 						printf("Klient se odpojil a byl odebran ze sady socketu\n");
 					}
 				}
@@ -151,9 +157,7 @@ int main (void)
 //	  1 - contains name
 int name_exists (clients *array_clients, char *name) {
 	int i;
-	printf("%d\n", array_clients -> clients_count);
 	for (i = 0; i < array_clients -> clients_count; i++) {
-		printf("%s - %s\n", array_clients -> clients[i] -> name, name);
 		if (strcmp(array_clients -> clients[i] -> name, name) == 0) {
 			return 1;
 		}
