@@ -17,7 +17,7 @@ int main (void)
 {
 
 	int name_length = 20;
-	int max_players = 2;
+	int max_players = 32;
 
 	clients *array_clients;	
 	create_clients(&array_clients);
@@ -109,7 +109,7 @@ int main (void)
 							char *name = tok;
 		
 							if (name_exists(array_clients, name) == 0) {								
-								if ((array_clients -> clients_count) < (max_players - 1)) {
+								if ((array_clients -> clients_count) < (max_players)) {
 									add_client(&array_clients, name, fd);
 									printf("Jmeno: %s\n", array_clients -> clients[array_clients -> clients_count -1] -> name);
 									send_message(fd, "login_ok;\n");					
