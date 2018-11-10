@@ -10,7 +10,6 @@
 #include "header.h"
 
 
-
 void create_clients(clients **array_clients) {
 	(*array_clients) = calloc(1, sizeof(clients));
 	(*array_clients) -> clients_count = 0;
@@ -33,7 +32,7 @@ void add_client(clients **array_clients, char *name, int socket_ID) {
 	(*array_clients) -> clients[((*array_clients) -> clients_count) - 1] = client;
 }
 	
-void client_remove(clients **array_clients, int socket_ID) {
+void client_remove(clients **array_clients, wanna_play** plays, int socket_ID) {
 	int i;
 	int count = (*array_clients) -> clients_count;
 	int socket;	
@@ -43,11 +42,26 @@ void client_remove(clients **array_clients, int socket_ID) {
 			(*array_clients) -> clients_count--;			
 			if (i < (count - 1)) {
 				free((*array_clients) -> clients[i]);
-				(*array_clients) -> clients[i] = (*array_clients) -> clients[((*array_clients) -> clients_count)];									
+				(*array_clients) -> clients[i] = (*array_clients) -> clients[((*array_clients) -> clients_count)];								
 			}
 			(*array_clients) -> clients[((*array_clients) -> clients_count)] = NULL;			
 			(*array_clients) -> clients = realloc((*array_clients) -> clients, (*array_clients) -> clients_count * sizeof(client));
+			return;
 		}
-		return;
+	}
+}
+
+void set_color(clients **array_clients, int socket_ID, char *color) {
+	int i;
+	int count = (*array_clients) -> clients_count;
+	int socket;	
+	for (i = 0; i < count; i++) {
+		socket = (*array_clients) -> clients[i] -> socket_ID;
+		if (socket == socket_ID) {
+
+			(*array_clients) -> clients[i] -> color = calloc(1, 5*sizeof(char));
+			strcpy((*array_clients) -> clients[i] -> color, color);
+			return;
+		}
 	}
 }

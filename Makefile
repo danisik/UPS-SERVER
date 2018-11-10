@@ -1,6 +1,6 @@
 CC = gcc
 BIN = server
-OBJ = client.o server.o
+OBJ = client.o game.o server.o
 
 all: $(BIN) clean
 

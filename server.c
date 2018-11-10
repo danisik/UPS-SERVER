@@ -13,12 +13,16 @@
 //vlánko do javy pro receive a send
 int main (void)
 {
-
-	int name_length = 20;
 	int max_players = 32;
 
 	clients *array_clients;	
 	create_clients(&array_clients);
+
+	games *all_games;
+	create_games(&all_games);
+
+	wanna_play *wanna_plays;
+	create_wanna_play(&wanna_plays);
 
 	int server_socket;
 	int client_socket, fd;
@@ -121,7 +125,35 @@ int main (void)
 							} 
 						}
 						else if (strcmp(type_message, "play") == 0) {
-							
+							add_wanna_play(&wanna_plays, fd);
+							if ((wanna_plays -> size) >= 2) {
+								//2x random id, assign them into one game and delete them from wanna_plays and decrement wanna_plays -> size
+								int socket_ID_1 = fd;
+								int socket_ID_2;
+								do {
+									socket_ID_2 = wanna_plays -> socket_IDs[rand() % (wanna_plays -> size)];
+								} 
+								while(socket_ID_2 == socket_ID_1);								
+
+								remove_wanna_play(&wanna_plays, socket_ID_1);
+								remove_wanna_play(&wanna_plays, socket_ID_2);
+								
+								int r = rand() % 2;
+								if (r == 0) {
+									send_message(socket_ID_1, "start_game;black;\n");
+									send_message(socket_ID_2, "start_game;white;\n");
+
+									set_color(&array_clients, socket_ID_1, "black");
+									set_color(&array_clients, socket_ID_2, "white");		
+								}
+								else {
+									send_message(socket_ID_1, "start_game;white;\n");
+									send_message(socket_ID_2, "start_game;black;\n");
+
+									set_color(&array_clients, socket_ID_1, "white");
+									set_color(&array_clients, socket_ID_2, "black");		
+								}				
+							} 
 						}
 						else if (strcmp(type_message, "client_move") == 0) {
 						
@@ -143,7 +175,7 @@ int main (void)
 					{
 						close(fd);
 						FD_CLR(fd, &client_socks);
-						client_remove(&array_clients, fd);
+						client_remove(&array_clients, &wanna_plays, fd);
 						printf("Klient se odpojil a byl odebran ze sady socketu\n");
 					}
 				}
