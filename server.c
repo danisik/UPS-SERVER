@@ -93,7 +93,6 @@ int main (void)
 				{
 					client_socket = accept(server_socket, (struct sockaddr *) &peer_addr, &len_addr);
 					FD_SET(client_socket, &client_socks);
-					printf("Pripojen novy klient a pridan do sady socketu\n");
 				}
 				else // je to klientsky socket? prijmem data
 				{
@@ -113,7 +112,7 @@ int main (void)
 							if (name_exists(array_clients, name) == 0) {								
 								if ((array_clients -> clients_count) < (max_players)) {
 									add_client(&array_clients, name, fd);
-									printf("Jmeno: %s\n", array_clients -> clients[array_clients -> clients_count -1] -> name);
+									printf("Name: %s\n", array_clients -> clients[array_clients -> clients_count -1] -> name);
 									send_message(fd, "login_ok;\n");					
 								}
 								else {
@@ -127,7 +126,6 @@ int main (void)
 						else if (strcmp(type_message, "play") == 0) {
 							add_wanna_play(&wanna_plays, fd);
 							if ((wanna_plays -> size) >= 2) {
-								//2x random id, assign them into one game and delete them from wanna_plays and decrement wanna_plays -> size
 								int socket_ID_1 = fd;
 								int socket_ID_2;
 								do {
@@ -176,7 +174,6 @@ int main (void)
 						close(fd);
 						FD_CLR(fd, &client_socks);
 						client_remove(&array_clients, &wanna_plays, fd);
-						printf("Klient se odpojil a byl odebran ze sady socketu\n");
 					}
 				}
 			}

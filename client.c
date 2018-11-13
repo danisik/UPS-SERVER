@@ -25,7 +25,7 @@ void create_client(client **cl, char *name, int socket_ID) {
 
 void add_client(clients **array_clients, char *name, int socket_ID) {
 	(*array_clients) -> clients_count++;
-	printf("Client count: %d\n", (*array_clients) -> clients_count);
+	printf("Clients count: %d\n", (*array_clients) -> clients_count);
 	(*array_clients) -> clients = realloc((*array_clients) -> clients, (*array_clients) -> clients_count * sizeof(client));
 	client *client = NULL;
 	create_client(&client, name, socket_ID);
