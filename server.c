@@ -24,6 +24,9 @@ int main (void)
 	wanna_play *wanna_plays;
 	create_wanna_play(&wanna_plays);
 
+	char state_not_playing[12] = "not_playing";
+	char state_playing[8] = "playing";
+
 	int server_socket;
 	int client_socket, fd;
 	int return_value;
@@ -33,7 +36,7 @@ int main (void)
 	int a2read;
 	struct sockaddr_in my_addr, peer_addr;
 	fd_set client_socks, tests;
-
+	
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	
 	int param = 1;
@@ -106,6 +109,7 @@ int main (void)
 						char *tok = strtok(cbuf, ";");
 						char *type_message = tok;
 						if (strcmp(type_message, "login") == 0) {	
+							//login;name;
 							tok = strtok(NULL, ";");
 							char *name = tok;
 		
@@ -124,6 +128,7 @@ int main (void)
 							} 
 						}
 						else if (strcmp(type_message, "play") == 0) {
+							//play;
 							add_wanna_play(&wanna_plays, fd);
 							if ((wanna_plays -> size) >= 2) {
 								int socket_ID_1 = fd;
@@ -136,28 +141,72 @@ int main (void)
 								remove_wanna_play(&wanna_plays, socket_ID_1);
 								remove_wanna_play(&wanna_plays, socket_ID_2);
 								
+
+								char message_1[100];
+								char message_2[100];
+								
 								int r = rand() % 2;
 								if (r == 0) {
-									send_message(socket_ID_1, "start_game;black;\n");
-									send_message(socket_ID_2, "start_game;white;\n");
+									sprintf(message_1, "start_game;black;%d\n", all_games -> games_count);
+									sprintf(message_2, "start_game;white;%d\n", all_games -> games_count);
+									
+									send_message(socket_ID_1, message_1);
+									send_message(socket_ID_2, message_2);
 
 									set_color(&array_clients, socket_ID_1, "black");
 									set_color(&array_clients, socket_ID_2, "white");		
 								}
 								else {
-									send_message(socket_ID_1, "start_game;white;\n");
-									send_message(socket_ID_2, "start_game;black;\n");
+									sprintf(message_1, "start_game;white;%d\n", all_games -> games_count);
+									sprintf(message_2, "start_game;black;%d\n", all_games -> games_count);
+									
+									send_message(socket_ID_1, message_1);
+									send_message(socket_ID_2, message_2);
 
 									set_color(&array_clients, socket_ID_1, "white");
 									set_color(&array_clients, socket_ID_2, "black");		
-								}				
+								}
+								
+								char *name_1 = get_name_by_socket_ID(array_clients, socket_ID_1);
+								char *name_2 = get_name_by_socket_ID(array_clients, socket_ID_2);
+
+								set_state(&array_clients, name_1, state_playing);
+								set_state(&array_clients, name_2, state_playing);
+
+								add_game(&all_games, name_1, name_2);
 							} 
 						}
 						else if (strcmp(type_message, "client_move") == 0) {
+							//client_move;game_ID;current_position;destination_position;color;type;
+							//pr. client_move;1;0,1;0,3;black;man;
+							
+							//game_ID
+							tok = strtok(NULL, ";");
+							int game_ID = atoi(tok);
 						
-						}
-						else if (strcmp(type_message, "end_move") == 0) {
-		
+							//current_position
+							tok = strtok(NULL, ";");
+							char *col_row = strtok(tok, ",");
+							int cp_row = atoi(col_row);
+							
+							col_row = strtok(NULL, ",");
+							int cp_col = atoi(col_row);
+
+							//destination_position
+							tok = strtok(NULL, ";");
+							col_row = strtok(tok, ",");
+							int dp_row = atoi(col_row);
+							
+							col_row = strtok(NULL, ",");
+							int dp_col = atoi(col_row);
+
+							//color
+							tok = strtok(NULL, ";");
+							char *color = tok;
+
+							//type
+							tok = strtok(NULL, ";");
+							char *piece = tok;
 						}
 						else if (strcmp(type_message, "new_game_yes") == 0) {
 		

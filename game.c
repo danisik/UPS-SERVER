@@ -47,19 +47,19 @@ void create_games(games **all_games) {
 	(*all_games) -> games = calloc(1, sizeof(game));	
 }
 
-void create_game(game **gm, int first_player_socket_ID, int second_player_socket_ID) {
+void create_game(game **gm, char *name_1, char *name_2) {
 	(*gm) = calloc(1, sizeof(game));
 	(*gm) -> size = 10;
-	(*gm) -> first_player_socket_ID = first_player_socket_ID;
-	(*gm) -> second_player_socket_ID = second_player_socket_ID;
+	(*gm) -> name_1 = name_1;
+	(*gm) -> name_2 = name_2;
 }
 
-void add_game(games **all_games, int first_player_socket_ID, int second_player_socket_ID) {
+void add_game(games **all_games, char *name_1, char *name_2) {
 	(*all_games) -> games_count++;
 	printf("Games count: %d\n", (*all_games) -> games_count);
 	(*all_games) -> games = realloc((*all_games) -> games, (*all_games) -> games_count * sizeof(game));
 	game *game = NULL;
-	create_game(&game, first_player_socket_ID, second_player_socket_ID);
+	create_game(&game, name_1, name_2);
 	(*all_games) -> games[((*all_games) -> games_count) - 1] = game;
 }
 
@@ -69,4 +69,47 @@ void remove_game() {
 
 void restart_game() {
 
+}
+
+//král všemi směry, ale pouze o krok
+//pokud mám krále a muže, můžu hýbat kým chci
+//skákání je povinné 
+//pokud lze vzít protihráči figurku (za figurkou je volné místo), musí jí přeskočit a přejít na volné políčko
+//pokud hráč nemůže hrát, prohrál (je zablokovaný, nemá šutry)
+void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
+
+	//kontrola zda určitý hráč může hýbat alespoň s jednou figurkou
+
+	if ((cp_row == dp_row) || (cp_col == dp_col)) {
+		//spatny tah, lze se hybat pouze diagonalne
+	}
+	else {
+		game *current_game = (*all_games) -> games[game_ID];
+		if (strcmp(color, "white") == 0) {
+			if (strcmp(type, "man") == 0) {
+				if (cp_row < dp_row) {
+					//spatny tah, bily man muze pouze dolu (current vzdy vetsi nez destination - row)
+				}
+				else {
+					
+				}
+			}
+			else {
+			
+			}
+		}
+		else {
+			if (strcmp(type, "man") == 0) {
+				if (cp_row > dp_row) {
+					//spatny tah, cerny man muze pouze dolu (current vzdy mensi nez destination - row)
+				}
+				else {
+	
+				}
+			}
+			else {
+			
+			}
+		}
+	}
 }
