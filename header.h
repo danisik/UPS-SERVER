@@ -2,6 +2,7 @@ typedef struct the_client client;
 typedef struct the_clients clients;
 typedef struct the_piece piece;
 typedef struct the_field field;
+typedef struct the_fields fields;
 typedef struct the_wanna_play wanna_play;
 typedef struct the_game game;
 typedef struct the_games games;
@@ -30,16 +31,20 @@ struct the_field {
 	piece *piece;
 };
 
+struct the_fields {
+	int size; //10
+	field ***all_fields;
+};
+
 struct the_wanna_play {
 	int size;
 	int *socket_IDs;
 };
 
 struct the_game {
-	int size;
 	char *name_1;
 	char *name_2;
-	field **fields;
+	fields **fields;
 };
 
 
@@ -72,6 +77,9 @@ void create_game(game **gm, char *name_1, char *name_2);
 void add_game(games **all_games, char *name_1, char *name_2);
 void remove_game();
 void restore_game();
+
+void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type);
+int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char *type);
 
 //free.c
 void free_client();

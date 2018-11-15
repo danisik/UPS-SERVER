@@ -49,7 +49,7 @@ void create_games(games **all_games) {
 
 void create_game(game **gm, char *name_1, char *name_2) {
 	(*gm) = calloc(1, sizeof(game));
-	(*gm) -> size = 10;
+	//create fields
 	(*gm) -> name_1 = name_1;
 	(*gm) -> name_2 = name_2;
 }
@@ -85,17 +85,17 @@ void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp
 	}
 	else {
 		game *current_game = (*all_games) -> games[game_ID];
+		fields **fields = current_game -> fields;
 		if (strcmp(color, "white") == 0) {
 			if (strcmp(type, "man") == 0) {
 				if (cp_row < dp_row) {
 					//spatny tah, bily man muze pouze dolu (current vzdy vetsi nez destination - row)
 				}
 				else {
-					
 				}
 			}
 			else {
-			
+				//king
 			}
 		}
 		else {
@@ -112,4 +112,55 @@ void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp
 			}
 		}
 	}
+}
+
+
+//return: 0 - can't kill piece
+//	  1 - can kill piece
+int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char *type) {
+
+	int first_position, second_position;
+
+	if (strcmp(color, "white") == 0) {
+		first_position = 1;
+		second_position = 2;
+	}
+	else {
+		first_position = -1;
+		second_position = -2;
+	}
+	
+	if (fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
+		if (strcmp(fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) == 1) {
+			if (fields -> all_fields[cp_row - second_position][cp_col - second_position] -> piece == NULL) {				
+				return 1;
+			}
+		}
+	}		
+	else if (fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
+		if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) == 1) {
+			if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {				
+				return 1;
+			}
+		}
+	}
+	
+	if (strcmp(type, "king") == 0) {
+		if (fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
+			if (strcmp(fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) == 1) {
+				if (fields -> all_fields[cp_row + second_position][cp_col - second_position] -> piece == NULL) {
+					return 1;
+				}
+			}
+		}		
+		else if (fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
+			if (strcmp(fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) == 1) {
+				if (fields -> all_fields[cp_row + second_position][cp_col + second_position] -> piece == NULL) {
+					return 1;
+				}
+			}
+		}	
+	}
+	
+	return 0;				
 }
