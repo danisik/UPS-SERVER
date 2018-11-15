@@ -71,46 +71,155 @@ void restart_game() {
 
 }
 
-//král všemi směry, ale pouze o krok
-//pokud mám krále a muže, můžu hýbat kým chci
-//skákání je povinné 
-//pokud lze vzít protihráči figurku (za figurkou je volné místo), musí jí přeskočit a přejít na volné políčko
+//král všemi směry, ale pouze o krok - HOTOVO
+//pokud mám krále a muže, můžu hýbat kým chci - NEŘEŠIT
+//skákání je povinné - NEŘEŠIT
+//pokud lze vzít protihráči figurku (za figurkou je volné místo), musí jí přeskočit a přejít na volné políčko - HOTOVO
 //pokud hráč nemůže hrát, prohrál (je zablokovaný, nemá šutry)
 void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
 
 	//kontrola zda určitý hráč může hýbat alespoň s jednou figurkou
-
+	
 	if ((cp_row == dp_row) || (cp_col == dp_col)) {
 		//spatny tah, lze se hybat pouze diagonalne
+		return;
+	}
+
+	game *current_game = (*all_games) -> games[game_ID];
+	fields **fields = current_game -> fields;
+
+	if ((*fields) -> all_fields[cp_row][cp_col] -> piece == NULL) {
+		//spatny tah, nepohybujeme s piece	
+		return;
+	}
+
+	int can_kill = check_if_can_kill(*fields, cp_row, cp_col, color, type);		
+
+
+	int first_position, second_position;
+
+	if (strcmp(color, "white") == 0) {
+		first_position = 1;
+		second_position = 2;
+		if ((cp_row < dp_row) && (strcmp(type, "man") == 0)) {
+			//spatny tah, cerny man muze pouze dolu (current vzdy mensi nez destination - row)
+		}
 	}
 	else {
-		game *current_game = (*all_games) -> games[game_ID];
-		fields **fields = current_game -> fields;
-		if (strcmp(color, "white") == 0) {
-			if (strcmp(type, "man") == 0) {
-				if (cp_row < dp_row) {
-					//spatny tah, bily man muze pouze dolu (current vzdy vetsi nez destination - row)
-				}
+		first_position = -1;
+		second_position = -2;
+		if ((cp_row > dp_row) && (strcmp(type, "man") == 0)) {
+			//spatny tah, cerny man muze pouze dolu (current vzdy mensi nez destination - row)
+		}
+	}
+
+	//udělat kontrolu, když kliknu někde na kraji boardu jestli nepřekročím pole fieldů při kontrole 
+	if (can_kill == 1) {
+		if (dp_row == (cp_row - second_position)) {
+			if ((dp_col == (cp_col - second_position)) && ((*fields) -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL)) {
+				if (strcmp((*fields) -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
+					//spravny tah, poslat message se změnou
+
+				}					
 				else {
+					//spatny tah, nelze preskakovat vlastni piece
 				}
 			}
+			else if ((dp_col == (cp_col + second_position)) && ((*fields) -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL)) {
+				if (strcmp((*fields) -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
+					//spravny tah, poslat message se změnou
+
+				}					
+				else {
+					//spatny tah, nelze preskakovat vlastni piece
+				}
+
+			}
 			else {
-				//king
+				//spatny tah, preskakuju prazdne misto
 			}
 		}
 		else {
-			if (strcmp(type, "man") == 0) {
-				if (cp_row > dp_row) {
-					//spatny tah, cerny man muze pouze dolu (current vzdy mensi nez destination - row)
+			//spatny tah, man musi preskocit protihracovo piece
+		}
+	}
+	else {
+		if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col - first_position)) ) {
+			if ((*fields) -> all_fields[cp_row - first_position][cp_col - first_position] -> piece == NULL) { 
+				//spravny tah, poslat message se změnou
+
+			}					
+			else {
+				//spatny tah, nelze jit na plne policko
+			}
+		}
+		else if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col + first_position)) ) {
+			if ((*fields) -> all_fields[cp_row - first_position][cp_col + first_position] -> piece == NULL) { 
+				//spravny tah, poslat message se změnou
+
+			}					
+			else {
+				//spatny tah, nelze preskakovat vlastni piece
+			}
+		}
+		else {
+			//spatny tah, man se musi posouvat pouze dopredu
+		}
+	}	
+
+	if (strcmp(type, "king") == 0) {
+		if (can_kill == 1) {
+			if (dp_row == (cp_row + second_position)) {
+				if ((dp_col == (cp_col + second_position)) && ((*fields) -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL)) {
+					if (strcmp((*fields) -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
+						//spravny tah, poslat message se změnou
+	
+					}					
+					else {
+						//spatny tah, nelze preskakovat vlastni piece
+					}
+				}
+				else if ((dp_col == (cp_col - second_position)) && ((*fields) -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL)) {
+					if (strcmp((*fields) -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
+						//spravny tah, poslat message se změnou
+	
+					}					
+					else {
+						//spatny tah, nelze preskakovat vlastni piece
+					}
+	
 				}
 				else {
-	
+					//spatny tah, preskakuju prazdne misto
 				}
 			}
 			else {
-			
+				//spatny tah, man musi preskocit protihracovo piece
 			}
 		}
+		else {
+			if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col + first_position)) ) {
+				if ((*fields) -> all_fields[cp_row + first_position][cp_col + first_position] -> piece == NULL) { 
+					//spravny tah, poslat message se změnou
+	
+				}					
+				else {
+					//spatny tah, nelze jit na plne policko
+				}
+			}
+			else if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col - first_position)) ) {
+				if ((*fields) -> all_fields[cp_row + first_position][cp_col - first_position] -> piece == NULL) { 
+					//spravny tah, poslat message se změnou	
+
+				}					
+				else {
+					//spatny tah, nelze preskakovat vlastni piece
+				}
+			}
+			else {
+				//spatny tah, man se musi posouvat pouze dopredu
+			}	
+		}		
 	}
 }
 
