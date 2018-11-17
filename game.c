@@ -47,11 +47,59 @@ void create_games(games **all_games) {
 	(*all_games) -> games = calloc(1, sizeof(game));	
 }
 
+void inicialize_pieces(fields **fields, char *color, int row, int col) {
+	int pieces_row = 4, fields_row = 10;
+	int i, j;
+	char *type_man = "man";
+	for(i = 0; i < pieces_row; i++) {
+		for(j = 0; j < fields_row; j++) {
+			if (( (row+i) + (col+j) ) % 2 != 0) {
+				piece *piece = calloc(1, sizeof(piece));
+				piece -> color = color;
+				piece -> type = type_man;
+				(*fields) -> all_fields[row+i][col+j] -> piece = piece;
+			}
+		}
+	}
+}
+
+void create_fields(game **gm) {
+	int size = 10;		
+	char *color_white = "white";
+	char *color_black = "black";
+	fields *fields = calloc(1, sizeof(fields));
+	
+	fields -> size = size;
+	fields -> all_fields = calloc(1, (fields -> size) * sizeof(field)); 
+	
+	int i, j;
+	for(i = 0; i < size; i++) {
+		fields -> all_fields[i] = calloc(1, (fields -> size) * sizeof(field));
+		for(j = 0; j < size; j++) {
+			fields -> all_fields[i][j] = calloc(1, sizeof(field));
+			fields -> all_fields[i][j] -> row = i;
+			fields -> all_fields[i][j] -> col = j;
+			
+			if ((i+j) % 2 == 0) {
+				fields -> all_fields[i][j] -> color = color_white;
+			}
+			else { 
+				fields -> all_fields[i][j] -> color = color_black;
+			}
+		}
+	}
+
+	inicialize_pieces(&fields, color_black, 0, 0);
+	inicialize_pieces(&fields, color_white, 6, 0);
+	(*gm) -> fields = &fields;
+}
+
 void create_game(game **gm, char *name_1, char *name_2) {
 	(*gm) = calloc(1, sizeof(game));
 	//create fields
 	(*gm) -> name_1 = name_1;
-	(*gm) -> name_2 = name_2;
+	(*gm) -> name_2 = name_2;	
+	create_fields(gm);
 }
 
 void add_game(games **all_games, char *name_1, char *name_2) {

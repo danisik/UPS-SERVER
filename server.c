@@ -30,7 +30,7 @@ int main (void)
 	int server_socket;
 	int client_socket, fd;
 	int return_value;
-	int cbuf_size = 100;
+	int cbuf_size = 1024;
 	char cbuf[cbuf_size];
 	int len_addr;
 	int a2read;
@@ -104,7 +104,10 @@ int main (void)
 					// mame co cist
 					if (a2read > 0)
 					{
-						recv(fd, &cbuf, cbuf_size*sizeof(char), 0);
+						int size_recv;
+
+						if ((size_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0) < 0)) {
+						}
 
 						char *tok = strtok(cbuf, ";");
 						char *type_message = tok;

@@ -73,6 +73,8 @@ void add_wanna_play(wanna_play **wanna_plays, int socket_ID);
 void remove_wanna_play(wanna_play **wanna_plays, int socket_ID);
 
 void create_games(games **all_games);
+void inicialize_pieces(fields **fields, char *color, int row, int col);
+void create_fields(game **gm);
 void create_game(game **gm, char *name_1, char *name_2);
 void add_game(games **all_games, char *name_1, char *name_2);
 void remove_game();
