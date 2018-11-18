@@ -35,7 +35,6 @@ void add_client(clients **array_clients, char *name, int socket_ID) {
 	(*array_clients) -> clients[((*array_clients) -> clients_count) - 1] = client;
 }
 	
-//smazat popřípadě i z wanna_play
 void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_ID) {
 	int i;
 	int count = (*array_clients) -> clients_count;

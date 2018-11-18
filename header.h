@@ -45,7 +45,7 @@ struct the_game {
 	char *name_1;
 	char *name_2;
 	char *now_playing;
-	fields **fields;
+	fields *fields;
 };
 
 
