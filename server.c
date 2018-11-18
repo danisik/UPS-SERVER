@@ -26,6 +26,7 @@ int main (void)
 
 	char state_not_playing[12] = "not_playing";
 	char state_playing[8] = "playing";
+	char state_wanna_play[12] = "wanna_play";
 
 	int server_socket;
 	int client_socket, fd;
@@ -133,6 +134,8 @@ int main (void)
 						else if (strcmp(type_message, "play") == 0) {
 							//play;
 							add_wanna_play(&wanna_plays, fd);
+							char *name = get_name_by_socket_ID(array_clients, fd);
+							set_state(&array_clients, name, state_wanna_play);
 							if ((wanna_plays -> size) >= 2) {
 								int socket_ID_1 = fd;
 								int socket_ID_2;
@@ -147,69 +150,67 @@ int main (void)
 
 								char message_1[100];
 								char message_2[100];
-								
+								char *now_playing;								
+							
+
+								char *name_1 = get_name_by_socket_ID(array_clients, socket_ID_1);
+								char *name_2 = get_name_by_socket_ID(array_clients, socket_ID_2);
+
 								int r = rand() % 2;
 								if (r == 0) {
-									sprintf(message_1, "start_game;black;%d\n", all_games -> games_count);
-									sprintf(message_2, "start_game;white;%d\n", all_games -> games_count);
-									
-									send_message(socket_ID_1, message_1);
-									send_message(socket_ID_2, message_2);
+									sprintf(message_1, "start_game;black;%d;\n", all_games -> games_count);
+									sprintf(message_2, "start_game;white;%d;\n", all_games -> games_count);
 
 									set_color(&array_clients, socket_ID_1, "black");
-									set_color(&array_clients, socket_ID_2, "white");		
+									set_color(&array_clients, socket_ID_2, "white");
+	
+									now_playing = name_2; 		
 								}
 								else {
-									sprintf(message_1, "start_game;white;%d\n", all_games -> games_count);
-									sprintf(message_2, "start_game;black;%d\n", all_games -> games_count);
-									
-									send_message(socket_ID_1, message_1);
-									send_message(socket_ID_2, message_2);
+									sprintf(message_1, "start_game;white;%d;\n", all_games -> games_count);
+									sprintf(message_2, "start_game;black;%d;\n", all_games -> games_count);
 
 									set_color(&array_clients, socket_ID_1, "white");
 									set_color(&array_clients, socket_ID_2, "black");		
+
+									now_playing = name_1;
 								}
-								
-								char *name_1 = get_name_by_socket_ID(array_clients, socket_ID_1);
-								char *name_2 = get_name_by_socket_ID(array_clients, socket_ID_2);
+							
 
 								set_state(&array_clients, name_1, state_playing);
 								set_state(&array_clients, name_2, state_playing);
 
-								add_game(&all_games, name_1, name_2);
+								add_game(&all_games, name_1, name_2, now_playing);
+
+								send_message(socket_ID_1, message_1);
+								send_message(socket_ID_2, message_2);
 							} 
 						}
 						else if (strcmp(type_message, "client_move") == 0) {
 							//client_move;game_ID;current_position;destination_position;color;type;
 							//pr. client_move;1;0,1;0,3;black;man;
 							
-							//game_ID
-							tok = strtok(NULL, ";");
-							int game_ID = atoi(tok);
+							int i = 0;
+							char *array[10];
 						
-							//current_position
 							tok = strtok(NULL, ";");
-							char *col_row = strtok(tok, ",");
-							int cp_row = atoi(col_row);
+
+							while(tok != NULL) {
+								array[i++] = tok;
+								tok = strtok(NULL, ";");
+							}
+
+							int game_ID = atoi(array[0]);
+							int cp_row = atoi(array[1]);
+							int cp_col = atoi(array[2]);
+							int dp_row = atoi(array[3]);
+							int dp_col = atoi(array[4]);
+							char *color = array[5];
+							char *piece = array[6];
 							
-							col_row = strtok(NULL, ",");
-							int cp_col = atoi(col_row);
-
-							//destination_position
-							tok = strtok(NULL, ";");
-							col_row = strtok(tok, ",");
-							int dp_row = atoi(col_row);
+							printf("Move: GID=%d CP=%d,%d DP=%d,%d COLOR=%s TYPE=%s\n", game_ID, cp_row, cp_col, dp_row, dp_col, color, piece);
 							
-							col_row = strtok(NULL, ",");
-							int dp_col = atoi(col_row);
-
-							//color
-							tok = strtok(NULL, ";");
-							char *color = tok;
-
-							//type
-							tok = strtok(NULL, ";");
-							char *piece = tok;
+							process_move(&all_games, array_clients, game_ID, cp_row, cp_col, dp_row, dp_col, color, piece); 
 						}
 						else if (strcmp(type_message, "new_game_yes") == 0) {
 		

@@ -9,6 +9,8 @@
 #include <sys/ioctl.h>
 #include "header.h"
 
+char *message_wrong_move = "wrong_move;";
+
 void create_wanna_play(wanna_play **wanna_plays) {
 	(*wanna_plays) = calloc(1, sizeof(wanna_play));
 	(*wanna_plays) -> size = 0;
@@ -42,9 +44,10 @@ void remove_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 }
 
 void create_games(games **all_games) {
+	int max_games = 16;
 	(*all_games) = calloc(1, sizeof(games));
 	(*all_games) -> games_count = 0;
-	(*all_games) -> games = calloc(1, sizeof(game));	
+	(*all_games) -> games = calloc(1, max_games * sizeof(game));	
 }
 
 void inicialize_pieces(fields **fields, char *color, int row, int col) {
@@ -91,32 +94,48 @@ void create_fields(game **gm) {
 
 	inicialize_pieces(&fields, color_black, 0, 0);
 	inicialize_pieces(&fields, color_white, 6, 0);
-	(*gm) -> fields = &fields;
+	(*gm) -> fields = &fields; 	
 }
 
-void create_game(game **gm, char *name_1, char *name_2) {
+void create_game(game **gm, char *name_1, char *name_2, char *now_playing) {
 	(*gm) = calloc(1, sizeof(game));
-	//create fields
 	(*gm) -> name_1 = name_1;
-	(*gm) -> name_2 = name_2;	
+	(*gm) -> name_2 = name_2;
+	(*gm) -> now_playing = now_playing;
 	create_fields(gm);
 }
 
-void add_game(games **all_games, char *name_1, char *name_2) {
+void add_game(games **all_games, char *name_1, char *name_2, char *now_playing) {
 	(*all_games) -> games_count++;
 	printf("Games count: %d\n", (*all_games) -> games_count);
 	(*all_games) -> games = realloc((*all_games) -> games, (*all_games) -> games_count * sizeof(game));
 	game *game = NULL;
-	create_game(&game, name_1, name_2);
+	create_game(&game, name_1, name_2, now_playing);
 	(*all_games) -> games[((*all_games) -> games_count) - 1] = game;
 }
 
-void remove_game() {
-
-}
-
-void restart_game() {
-
+void remove_game(clients **clients, games **all_games, int game_ID) {
+	int i;
+	int count = (*all_games) -> games_count;
+	int index;
+	for (i = 0; i < count; i++) {
+		if (i == game_ID) {
+			(*all_games) -> games_count--;			
+			if (i < (count - 1)) {
+				free((*all_games) -> games[i]);
+				(*all_games) -> games[i] = (*all_games) -> games[((*all_games) -> games_count)];								
+			}
+			(*all_games) -> games[((*all_games) -> games_count)] = NULL;			
+			(*all_games) -> games = realloc((*all_games) -> games, (*all_games) -> games_count * sizeof(game));
+			index = i;			
+			return;
+		}
+	}
+	char *message;
+	sprintf(message, "update_game_ID;%d;\n", index);
+	
+	send_message(get_socket_ID_by_name(*clients, (*all_games) -> games[index] -> name_1), message);
+	send_message(get_socket_ID_by_name(*clients, (*all_games) -> games[index] -> name_2), message);
 }
 
 //král všemi směry, ale pouze o krok - HOTOVO
@@ -124,10 +143,9 @@ void restart_game() {
 //skákání je povinné - NEŘEŠIT
 //pokud lze vzít protihráči figurku (za figurkou je volné místo), musí jí přeskočit a přejít na volné políčko - HOTOVO
 //pokud hráč nemůže hrát, prohrál (je zablokovaný, nemá šutry)
-void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
+void process_move(games **all_games, clients *clients, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
 
 	//kontrola zda určitý hráč může hýbat alespoň s jednou figurkou
-	
 	if ((cp_row == dp_row) || (cp_col == dp_col)) {
 		//spatny tah, lze se hybat pouze diagonalne
 		return;
@@ -145,73 +163,86 @@ void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp
 
 
 	int first_position, second_position;
+	int current_player_socket_ID = get_socket_ID_by_name(clients, current_game -> now_playing);
+	int second_player_socket_ID = -1;
+	
+	if (strcmp(current_game -> now_playing, current_game -> name_1) == 0) {
+		second_player_socket_ID = get_socket_ID_by_name(clients, current_game -> name_2);
+	}
+	else {
+		second_player_socket_ID = get_socket_ID_by_name(clients, current_game -> name_1);
+	}
 
 	if (strcmp(color, "white") == 0) {
 		first_position = 1;
 		second_position = 2;
 		if ((cp_row < dp_row) && (strcmp(type, "man") == 0)) {
-			//spatny tah, cerny man muze pouze dolu (current vzdy mensi nez destination - row)
+			send_message(current_player_socket_ID, message_wrong_move);
 		}
 	}
 	else {
 		first_position = -1;
 		second_position = -2;
 		if ((cp_row > dp_row) && (strcmp(type, "man") == 0)) {
-			//spatny tah, cerny man muze pouze dolu (current vzdy mensi nez destination - row)
+			send_message(current_player_socket_ID, message_wrong_move);
 		}
 	}
 
 	//udělat kontrolu, když kliknu někde na kraji boardu jestli nepřekročím pole fieldů při kontrole 
+	//nezapomínat posílat odpověď druhému hráči, až bude moct hrát
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
 			if ((dp_col == (cp_col - second_position)) && ((*fields) -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL)) {
 				if (strcmp((*fields) -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
-					//spravny tah, poslat message se změnou
+					send_message(current_player_socket_ID, "correct_move;");
+					send_message(second_player_socket_ID, "correct_move");
 
 				}					
 				else {
-					//spatny tah, nelze preskakovat vlastni piece
+					send_message(current_player_socket_ID, message_wrong_move);
 				}
 			}
 			else if ((dp_col == (cp_col + second_position)) && ((*fields) -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL)) {
 				if (strcmp((*fields) -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
-					//spravny tah, poslat message se změnou
+					send_message(current_player_socket_ID, "correct_move;");
+					send_message(second_player_socket_ID, "correct_move");
 
 				}					
 				else {
-					//spatny tah, nelze preskakovat vlastni piece
+					send_message(current_player_socket_ID, message_wrong_move);
 				}
 
 			}
 			else {
-				//spatny tah, preskakuju prazdne misto
+				send_message(current_player_socket_ID, message_wrong_move);
 			}
 		}
 		else {
-			//spatny tah, man musi preskocit protihracovo piece
+			send_message(current_player_socket_ID, message_wrong_move);
 		}
 	}
 	else {
 		if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col - first_position)) ) {
 			if ((*fields) -> all_fields[cp_row - first_position][cp_col - first_position] -> piece == NULL) { 
-				//spravny tah, poslat message se změnou
+				send_message(current_player_socket_ID, "correct_move;");
+				send_message(second_player_socket_ID, "correct_move");
 
 			}					
 			else {
-				//spatny tah, nelze jit na plne policko
+				send_message(current_player_socket_ID, message_wrong_move);
 			}
 		}
 		else if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col + first_position)) ) {
 			if ((*fields) -> all_fields[cp_row - first_position][cp_col + first_position] -> piece == NULL) { 
-				//spravny tah, poslat message se změnou
-
+				send_message(current_player_socket_ID, "correct_move;");
+				send_message(second_player_socket_ID, "correct_move");
 			}					
 			else {
-				//spatny tah, nelze preskakovat vlastni piece
+				send_message(current_player_socket_ID, message_wrong_move);
 			}
 		}
 		else {
-			//spatny tah, man se musi posouvat pouze dopredu
+			send_message(current_player_socket_ID, message_wrong_move);
 		}
 	}	
 
@@ -220,52 +251,52 @@ void process_move(games **all_games, int game_ID, int cp_row, int cp_col, int dp
 			if (dp_row == (cp_row + second_position)) {
 				if ((dp_col == (cp_col + second_position)) && ((*fields) -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL)) {
 					if (strcmp((*fields) -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
-						//spravny tah, poslat message se změnou
-	
+						send_message(current_player_socket_ID, "correct_move;");
+						send_message(second_player_socket_ID, "correct_move");	
 					}					
 					else {
-						//spatny tah, nelze preskakovat vlastni piece
+						send_message(current_player_socket_ID, message_wrong_move);
 					}
 				}
 				else if ((dp_col == (cp_col - second_position)) && ((*fields) -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL)) {
 					if (strcmp((*fields) -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
-						//spravny tah, poslat message se změnou
-	
+						send_message(current_player_socket_ID, "correct_move;");
+						send_message(second_player_socket_ID, "correct_move");
 					}					
 					else {
-						//spatny tah, nelze preskakovat vlastni piece
+						send_message(current_player_socket_ID, message_wrong_move);
 					}
 	
 				}
 				else {
-					//spatny tah, preskakuju prazdne misto
+					send_message(current_player_socket_ID, message_wrong_move);
 				}
 			}
 			else {
-				//spatny tah, man musi preskocit protihracovo piece
+				send_message(current_player_socket_ID, message_wrong_move);
 			}
 		}
 		else {
 			if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col + first_position)) ) {
 				if ((*fields) -> all_fields[cp_row + first_position][cp_col + first_position] -> piece == NULL) { 
-					//spravny tah, poslat message se změnou
-	
+					send_message(current_player_socket_ID, "correct_move;");
+					send_message(second_player_socket_ID, "correct_move");
 				}					
 				else {
-					//spatny tah, nelze jit na plne policko
+					send_message(current_player_socket_ID, message_wrong_move);
 				}
 			}
 			else if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col - first_position)) ) {
 				if ((*fields) -> all_fields[cp_row + first_position][cp_col - first_position] -> piece == NULL) { 
-					//spravny tah, poslat message se změnou	
-
+					send_message(current_player_socket_ID, "correct_move;");
+					send_message(second_player_socket_ID, "correct_move");
 				}					
 				else {
-					//spatny tah, nelze preskakovat vlastni piece
+					send_message(current_player_socket_ID, message_wrong_move);
 				}
 			}
 			else {
-				//spatny tah, man se musi posouvat pouze dopredu
+				send_message(current_player_socket_ID, message_wrong_move);
 			}	
 		}		
 	}
