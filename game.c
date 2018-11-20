@@ -143,29 +143,40 @@ void remove_game(clients **clients, games **all_games, int game_ID) {
 //pokud hráč nemůže hrát, prohrál (je zablokovaný, nemá šutry)
 void process_move(games **all_games, clients *clients, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
 
+	//0//wrong_move;Color or type is NA;
+	//1//wrong_move;You can't move opponents piece;
+	//2//wrong_move;You can move only diagonally;
+	//3//wrong_move;You did not select any your piece;
+	//4//wrong_move;You can move your man only forward;
+	//5//wrong_move;You can't destroy your piece;
+	//6//wrong_move;You can't move by 2 fields when you do not hop over opponents piece;
+	//7//wrong_move;You can't move to fields, because other piece is here;
+	//8//wrong_move;You can move your man by only 1 field per move;
+
 	int current_player_socket_ID = get_socket_ID_by_name(clients, (*all_games) -> games[game_ID] -> now_playing);
 	char *current_player_color = get_color_by_name(clients, (*all_games) -> games[game_ID] -> now_playing);
 	int second_player_socket_ID = -1;
 
 	//kontrola zda určitý hráč může hýbat alespoň s jednou figurkou
-
+	//error v čísle (kódu)
+	//kdyby náhodou byl čas, tak color na int
 	if (strcmp(color, "NA") == 0 || strcmp(type, "NA") == 0) {
-		send_message(current_player_socket_ID, "wrong_move;Color or type is NA;\n");
+		send_message(current_player_socket_ID, "wrong_move;0;\n");
 		return;
 	}
 	
 	if (strcmp(color, current_player_color) != 0) {
-		send_message(current_player_socket_ID, "wrong_move;You can't move opponents piece");
+		send_message(current_player_socket_ID, "wrong_move;1;\n");
 		return;
 	}
 
 	if ((cp_row == dp_row) || (cp_col == dp_col)) {
-		send_message(current_player_socket_ID, "wrong_move;You can move only diagonally;\n");
+		send_message(current_player_socket_ID, "wrong_move;2;\n");
 		return;
 	}
 	
 	if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece == NULL) {
-		send_message(current_player_socket_ID, "wrong_move;You did not select any your piece;\n");
+		send_message(current_player_socket_ID, "wrong_move;3;\n");
 		return;
 	}
 
@@ -187,14 +198,14 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 		first_position = 1;
 		second_position = 2;
 		if ((cp_row < dp_row) && (strcmp(type, "man") == 0)) {
-			send_message(current_player_socket_ID, "wrong_move;You can move your man only forward;\n");
+			send_message(current_player_socket_ID, "wrong_move;4;\n");
 		}
 	}
 	else {
 		first_position = -1;
 		second_position = -2;
 		if ((cp_row > dp_row) && (strcmp(type, "man") == 0)) {
-			send_message(current_player_socket_ID, "wrong_move;You can move your man only forward;\n");
+			send_message(current_player_socket_ID, "wrong_move;4;\n");
 			return;
 		}
 	}
@@ -215,7 +226,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 
 				}					
 				else {
-					send_message(current_player_socket_ID, "wrong_move;You can't destroy your piece;\n");
+					send_message(current_player_socket_ID, "wrong_move;5;\n");
 					return;
 				}
 			}
@@ -230,19 +241,63 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 					return;
 				}					
 				else {
-					send_message(current_player_socket_ID, "wrong_move;You can't destroy your piece;\n");
+					send_message(current_player_socket_ID, "wrong_move;5;\n");
 					return;
 				}
 
 			}
-			//elseif piece je king a porovnat zbylé dva možné kroky na opačnou stranu
+			else if (strcmp(type, "king") == 0) {
+				if (dp_row == (cp_row + second_position)) {
+					if ((dp_col == (cp_col + second_position)) && ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL)) {
+						if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
+							send_message(current_player_socket_ID, "correct_move;\n"); //zpráva ve tvaru correct_move;2;0;1;1;2; - pouze posun o 1 políčko
+												   //nebo zpráva     correct_move;3;0;1;1;2;2;3; - přeskok piece  					
+							send_message(second_player_socket_ID, "correct_move;\n");
+							if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) == 1) {
+								send_message(current_player_socket_ID, "end_move;\n");
+								send_message(second_player_socket_ID, "play_next_player;\n");
+							}
+							return;
+						}					
+						else {
+							send_message(current_player_socket_ID, "wrong_move;5;\n");
+							return;
+						}
+					}
+					else if ((dp_col == (cp_col - second_position)) && ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL)) {	
+						if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
+							send_message(current_player_socket_ID, "correct_move;\n"); //zpráva ve tvaru correct_move;2;0;1;1;2; - pouze posun o 1 políčko
+												   //nebo zpráva     correct_move;3;0;1;1;2;2;3; - přeskok piece  					
+							send_message(second_player_socket_ID, "correct_move;\n");
+							if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) == 1) {
+								send_message(current_player_socket_ID, "end_move;\n");
+								send_message(second_player_socket_ID, "play_next_player;\n");
+							}
+							return;
+						}					
+						else {
+							send_message(current_player_socket_ID, "wrong_move;5;\n");
+							return;
+						}
+		
+					}
+					else {
+						send_message(current_player_socket_ID, "wrong_move;6;\n");
+						return;
+					}
+				}
+				else {
+					send_message(current_player_socket_ID, "wrong_move;6;\n");
+					return;
+				}
+			}
 			else {
-				send_message(current_player_socket_ID, "wrong_move;You can't move by 2 fields when you do not hop over opponents piece;\n");
+				send_message(current_player_socket_ID, "wrong_move;6;\n");
 				return;
 			}
 		}
 		else {
-			send_message(current_player_socket_ID, "wrong_move;You can't move by 2 fields when you do not hop over opponents piece;\n");
+			send_message(current_player_socket_ID, "wrong_move;6;\n");
 			return;
 		}
 	}
@@ -256,7 +311,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 
 			}					
 			else {
-				send_message(current_player_socket_ID, "wrong_move;You can't move to fields, because other piece is here;\n");
+				send_message(current_player_socket_ID, "wrong_move;7;\n");
 				return;
 			}
 		}
@@ -268,54 +323,11 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 				return;
 			}					
 			else {
-				send_message(current_player_socket_ID, "wrong_move;You can't destroy your piece;\n");
+				send_message(current_player_socket_ID, "wrong_move;5;\n");
 				return;
 			}
 		}
-		//elseif piece je king a porovnat zbylé dva možné kroky na opačnou stranu
-		else {
-			send_message(current_player_socket_ID, "wrong_move;You can move your man by only 1 field per move;\n");
-			return;
-		}
-	}	
-
-	if (strcmp(type, "king") == 0) {
-		if (can_kill == 1) {
-			if (dp_row == (cp_row + second_position)) {
-				if ((dp_col == (cp_col + second_position)) && ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL)) {
-					if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
-						send_message(current_player_socket_ID, "correct_move;\n");
-						//send_message(second_player_socket_ID, "correct_move;\n");	
-						return;
-					}					
-					else {
-						send_message(current_player_socket_ID, "wrong_move;You can't destroy your piece;\n");
-						return;
-					}
-				}
-				else if ((dp_col == (cp_col - second_position)) && ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL)) {
-					if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
-						send_message(current_player_socket_ID, "correct_move;\n");
-						//send_message(second_player_socket_ID, "correct_move;\n");
-						return;
-					}					
-					else {
-						send_message(current_player_socket_ID, "wrong_move;You can't destroy your piece;\n");
-						return;
-					}
-	
-				}
-				else {
-					send_message(current_player_socket_ID, "wrong_move;You can't move by 2 fields when you do not hop over opponents piece;\n");
-					return;
-				}
-			}
-			else {
-				send_message(current_player_socket_ID, "wrong_move;You can't move by 2 fields when you do not hop over opponents piece;\n");
-				return;
-			}
-		}
-		else {
+		else if (strcmp(type, "king") == 0) {
 			if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col + first_position)) ) {
 				if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece == NULL) { 
 					send_message(current_player_socket_ID, "correct_move;\n");
@@ -324,7 +336,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 					return;
 				}					
 				else {
-					send_message(current_player_socket_ID, "wrong_move;You can't move to fields, because other piece is here;\n");
+					send_message(current_player_socket_ID, "wrong_move;7;\n");
 					return;
 				}
 			}
@@ -336,16 +348,20 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 					return;
 				}					
 				else {
-					send_message(current_player_socket_ID, "wrong_move;You can't destroy your piece;\n");
+					send_message(current_player_socket_ID, "wrong_move;5;\n");
 					return;
 				}
 			}
 			else {
-				send_message(current_player_socket_ID, "wrong_move;You can move your man only forward;\n");
+				send_message(current_player_socket_ID, "wrong_move;4;\n");
 				return;
-			}	
-		}		
-	}
+			}
+		}
+		else {
+			send_message(current_player_socket_ID, "wrong_move;8;\n");
+			return;
+		}
+	}	
 }
 
 
