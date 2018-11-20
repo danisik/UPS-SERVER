@@ -107,3 +107,15 @@ int get_socket_ID_by_name(clients *array_clients, char *name) {
 		}
 	}
 }
+
+char *get_color_by_name(clients *array_clients, char *name) {
+	int i;
+	int count = array_clients -> clients_count;
+	char *client_name;	
+	for (i = 0; i < count; i++) {
+		client_name = array_clients -> clients[i] -> name;
+		if (strcmp(name, client_name) == 0) {
+			return array_clients -> clients[i] -> color;
+		}
+	}
+}

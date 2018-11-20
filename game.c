@@ -144,13 +144,18 @@ void remove_game(clients **clients, games **all_games, int game_ID) {
 void process_move(games **all_games, clients *clients, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
 
 	int current_player_socket_ID = get_socket_ID_by_name(clients, (*all_games) -> games[game_ID] -> now_playing);
+	char *current_player_color = get_color_by_name(clients, (*all_games) -> games[game_ID] -> now_playing);
 	int second_player_socket_ID = -1;
 
 	//kontrola zda určitý hráč může hýbat alespoň s jednou figurkou
-	//vytvořit metodu get_color_by_name a kontrolovat, zda náhodou nechci hýbat s oponentovo figurkama
 
 	if (strcmp(color, "NA") == 0 || strcmp(type, "NA") == 0) {
 		send_message(current_player_socket_ID, "wrong_move;Color or type is NA;\n");
+		return;
+	}
+	
+	if (strcmp(color, current_player_color) != 0) {
+		send_message(current_player_socket_ID, "wrong_move;You can't move opponents piece");
 		return;
 	}
 
@@ -163,6 +168,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 		send_message(current_player_socket_ID, "wrong_move;You did not select any your piece;\n");
 		return;
 	}
+
 	
 	int can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type);		
 	
@@ -193,14 +199,18 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 		}
 	}
 	
-	//udělat kontrolu, když kliknu někde na kraji boardu jestli nepřekročím pole fieldů při kontrole 
-	//nezapomínat posílat odpověď druhému hráči, až bude moct hrát
+	//pokud zabiju hráče a není zde další piece který lze přeskočit, končí tah - udělat strom možností do hloubky 1 (bfs)
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
 			if ((dp_col == (cp_col - second_position)) && ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL)) {
 				if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) == 1) { 
-					send_message(current_player_socket_ID, "correct_move;\n");
-					//send_message(second_player_socket_ID, "correct_move;\n");
+					send_message(current_player_socket_ID, "correct_move;\n"); //zpráva ve tvaru correct_move;2;0;1;1;2; - pouze posun o 1 políčko
+												   //nebo zpráva     correct_move;3;0;1;1;2;2;3; - přeskok piece  					
+					send_message(second_player_socket_ID, "correct_move;\n");
+					if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) == 1) {
+						send_message(current_player_socket_ID, "end_move;\n");
+						send_message(second_player_socket_ID, "play_next_player;\n");
+					}
 					return;
 
 				}					
@@ -212,7 +222,11 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 			else if ((dp_col == (cp_col + second_position)) && ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL)) {
 				if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) == 1) { 
 					send_message(current_player_socket_ID, "correct_move;\n");
-					//send_message(second_player_socket_ID, "correct_move;\n");
+					send_message(second_player_socket_ID, "correct_move;\n");
+					if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) == 1) {
+						send_message(current_player_socket_ID, "end_move;\n");
+						send_message(second_player_socket_ID, "play_next_player;\n");
+					}					
 					return;
 				}					
 				else {
@@ -221,6 +235,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 				}
 
 			}
+			//elseif piece je king a porovnat zbylé dva možné kroky na opačnou stranu
 			else {
 				send_message(current_player_socket_ID, "wrong_move;You can't move by 2 fields when you do not hop over opponents piece;\n");
 				return;
@@ -236,6 +251,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 			if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece == NULL) { 
 				send_message(current_player_socket_ID, "correct_move;\n");
 				//send_message(second_player_socket_ID, "correct_move;\n");
+				//send message aby hrál druhý hráč
 				return;
 
 			}					
@@ -248,6 +264,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 			if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece == NULL) { 
 				send_message(current_player_socket_ID, "correct_move;\n");
 				//send_message(second_player_socket_ID, "correct_move;\n");
+				//send message aby hrál druhý hráč
 				return;
 			}					
 			else {
@@ -255,6 +272,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 				return;
 			}
 		}
+		//elseif piece je king a porovnat zbylé dva možné kroky na opačnou stranu
 		else {
 			send_message(current_player_socket_ID, "wrong_move;You can move your man by only 1 field per move;\n");
 			return;
@@ -302,6 +320,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 				if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece == NULL) { 
 					send_message(current_player_socket_ID, "correct_move;\n");
 					//send_message(second_player_socket_ID, "correct_move;\n");
+					//send message aby hrál druhý hráč
 					return;
 				}					
 				else {
@@ -313,6 +332,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 				if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece == NULL) { 
 					send_message(current_player_socket_ID, "correct_move;\n");
 					//send_message(second_player_socket_ID, "correct_move;\n");
+					//send message aby hrál druhý hráč
 					return;
 				}					
 				else {

@@ -68,6 +68,7 @@ void set_color(clients **array_clients, int socket_ID, char *color);
 void set_state(clients **array_clients, char *name, char *state);
 char *get_name_by_socket_ID(clients *array_clients, int socket_ID);
 int get_socket_ID_by_name(clients *array_clients, char *name);
+char *get_color_by_name(clients *array_clients, char *name);
 
 //game.c
 void create_wanna_play(wanna_play **wanna_plays);
