@@ -171,7 +171,17 @@ void send_all_kill(games **all_games, int game_ID, int cp_row, int cp_col, int m
 //0 - nothing
 //1 - correct_move
 //2 - wrong move
-int all_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+int all_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color) {
+
+	if (color != NULL) {
+		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
+			if (strcmp(color, (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece -> color) != 0) {
+				return 0;
+			} 
+		}
+		else return 0;
+	}
+
 	if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col - first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece == NULL) { 
 			return 1;
@@ -184,7 +194,16 @@ int all_first_move_no_kill(games **all_games, int game_ID, int first_position, i
 }
 
 //
-int all_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+int all_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color) {
+	if (color != NULL) {
+		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
+			if (strcmp(color, (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece -> color) != 0) {
+				return 0;
+			} 
+		}
+		else return 0;
+	}
+
 	if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col + first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece == NULL) { 
 			return 1;
@@ -197,7 +216,16 @@ int all_second_move_no_kill(games **all_games, int game_ID, int first_position, 
 }
 
 //
-int king_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+int king_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color) {
+	if (color != NULL) {
+		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
+			if (strcmp(color, (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece -> color) != 0) {
+				return 0;
+			} 
+		}
+		else return 0;
+	}
+
 	if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col + first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece == NULL) { 
 			return 1;
@@ -210,7 +238,16 @@ int king_first_move_no_kill(games **all_games, int game_ID, int first_position, 
 }
 
 //
-int king_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+int king_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color) {
+	if (color != NULL) {
+		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
+			if (strcmp(color, (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece -> color) != 0) {
+				return 0;
+			} 
+		}
+		else return 0;
+	}
+
 	if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col - first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece == NULL) { 
 			return 1;
@@ -222,7 +259,9 @@ int king_second_move_no_kill(games **all_games, int game_ID, int first_position,
 	else return 0;
 }
 
-//
+//0 - nothing
+//1 - correct_move
+//2 - wrong move
 int all_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
 	if (dp_col == (cp_col - second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
