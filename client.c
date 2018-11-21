@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <stdlib.h>
-// kvuli iotctl
 #include <sys/ioctl.h>
 #include "header.h"
 
