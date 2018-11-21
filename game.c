@@ -175,7 +175,24 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 	}
 	*/
 	
-	int can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type);	
+	//int can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type);	
+	int i, j, tmp_can_kill = 0, can_kill = 0;
+	printf("checking can_kill\n");
+	for (i = 0; i < (*all_games) -> games[game_ID] -> fields -> size; i++) {
+		for (j = 0; j < (*all_games) -> games[game_ID] -> fields -> size; j++) {
+			if ((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece != NULL) {
+				if (strcmp( (*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0 ) {
+					printf("can_kill %d %d \n", i, j);					
+					tmp_can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, i, j, color, type);	
+					if (tmp_can_kill == 1) {
+						can_kill = tmp_can_kill;
+						break;
+					}
+				}
+			}
+		}
+	}
+	printf("can kill: %d\n", can_kill);
 
 	int first_position, second_position;
 
@@ -206,11 +223,9 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 		}
 	}
 	
-	//zpráva ve tvaru correct_move;2;0;1;1;2; - pouze posun o 1 políčko
-	//nebo zpráva     correct_move;3;0;1;1;2;2;3; - přeskok piece 
-	
 	//pokud zabiju hráče a není zde další piece který lze přeskočit, končí tah - udělat strom možností do hloubky 1 (bfs)
-	//can kill kontrolovat taky pro všechny hráče - taky bfs strom do hloubky 1
+	//zkontrolovat všechny piece, zda mohou někoho v okolí sejmout (pokud ano, zjisti jeho souřadnice)
+	//udělat promote mana, pokuď dojde na konec pole
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
 			if (dp_col == (cp_col - second_position)) {
@@ -465,52 +480,105 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 
 	int first_position, second_position;
 
-	if (strcmp(color, "white") == 0) {
-		first_position = 1;
-		second_position = 2;
-	}
-	else {
-		first_position = -1;
-		second_position = -2;
-	}
-
-	if ((cp_row - first_position) >= 0 && (cp_col - first_position) >= 0) {
-		if (fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
-			if (strcmp(fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) != 0) {
-				if (fields -> all_fields[cp_row - second_position][cp_col - second_position] -> piece == NULL) {	
-					return 1;
-				}
-			}
-		}	
-	}	
-	if ((cp_row - first_position) >= 0 && (cp_col + first_position) <= 9) {
-		if (fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
-			if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) {
-				if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {				
-					return 1;
-				}
-			}
-		}
-	}
+	first_position = 1;
+	second_position = 2;
 	
-	if (strcmp(type, "king") == 0) {
-		if ((cp_row + first_position) >= 9 && (cp_col - first_position) <= 0) {
-			if (fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
-				if (strcmp(fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) {
-					if (fields -> all_fields[cp_row + second_position][cp_col - second_position] -> piece == NULL) {
-						return 1;
-					}
-				}
-			}
-		}
-		if ((cp_row + first_position) <= 9 && (cp_col + first_position) <= 9) {		
-			if (fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
-				if (strcmp(fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) {
-					if (fields -> all_fields[cp_row + second_position][cp_col + second_position] -> piece == NULL) {
-						return 1;
+	if (strcmp(color, "white") == 0) {
+		if ((cp_row - first_position) >= 0 && (cp_col - first_position) >= 0) {
+			if (fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
+				if (strcmp(fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) != 0) {
+					if((cp_row - second_position) >= 0 && (cp_col - second_position) >= 0) {
+						if (fields -> all_fields[cp_row - second_position][cp_col - second_position] -> piece == NULL) {	
+							return 1;
+						}
 					}
 				}
 			}	
+		}	
+		if ((cp_row - first_position) >= 0 && (cp_col + first_position) <= 9) {
+			if (fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
+				if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) {
+					if((cp_row - second_position) >= 0 && (cp_col + second_position) <= 9) {	
+						if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {				
+							return 1;
+						}
+					}
+				}
+			}
+		}
+		
+		if (strcmp(type, "king") == 0) {
+			if ((cp_row + first_position) <= 9 && (cp_col - first_position) >= 0) {
+				if (fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
+					if (strcmp(fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) {
+						if((cp_row + second_position) <= 9 && (cp_col - second_position) >= 0) {	
+							if (fields -> all_fields[cp_row + second_position][cp_col - second_position] -> piece == NULL) {
+								return 1;
+							}
+						}
+					}
+				}
+			}
+			if ((cp_row + first_position) <= 9 && (cp_col + first_position) <= 9) {		
+				if (fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
+					if (strcmp(fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) {
+						if((cp_row + second_position) <= 9 && (cp_col + second_position) <= 9) {	
+							if (fields -> all_fields[cp_row + second_position][cp_col + second_position] -> piece == NULL) {
+								return 1;
+							}
+						}
+					}
+				}	
+			}
+		}
+	}
+	else {
+		if ((cp_row + first_position) <= 9 && (cp_col + first_position) <= 9) {
+			if (fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
+				if (strcmp(fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) {
+					if((cp_row + second_position) <= 9 && (cp_col + second_position) <= 9) {
+						if (fields -> all_fields[cp_row + second_position][cp_col + second_position] -> piece == NULL) {	
+							return 1;
+						}
+					}
+				}
+			}	
+		}	
+		if ((cp_row + first_position) <= 9 && (cp_col - first_position) >= 0) {
+			if (fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
+				if (strcmp(fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) {
+					if((cp_row + second_position) <= 9 && (cp_col - second_position) >= 0) {	
+						if (fields -> all_fields[cp_row + second_position][cp_col - second_position] -> piece == NULL) {				
+							return 1;
+						}
+					}
+				}
+			}
+		}
+		
+		if (strcmp(type, "king") == 0) {
+			if ((cp_row - first_position) >= 0 && (cp_col + first_position) <= 9) {
+				if (fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
+					if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) {
+						if((cp_row - second_position) >= 0 && (cp_col + second_position) <= 9) {	
+							if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {
+								return 1;
+							}
+						}
+					}
+				}
+			}
+			if ((cp_row - first_position) >= 0 && (cp_col - first_position) >= 0) {		
+				if (fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
+					if (strcmp(fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) != 0) {
+						if((cp_row - second_position) >= 0 && (cp_col - second_position) >= 0) {	
+							if (fields -> all_fields[cp_row - second_position][cp_col - second_position] -> piece == NULL) {
+								return 1;
+							}
+						}
+					}
+				}	
+			}
 		}
 	}
 	return 0;				
