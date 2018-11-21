@@ -177,12 +177,10 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 	
 	//int can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type);	
 	int i, j, tmp_can_kill = 0, can_kill = 0;
-	printf("checking can_kill\n");
 	for (i = 0; i < (*all_games) -> games[game_ID] -> fields -> size; i++) {
 		for (j = 0; j < (*all_games) -> games[game_ID] -> fields -> size; j++) {
 			if ((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece != NULL) {
-				if (strcmp( (*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0 ) {
-					printf("can_kill %d %d \n", i, j);					
+				if (strcmp( (*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0 ) {			
 					tmp_can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, i, j, color, type);	
 					if (tmp_can_kill == 1) {
 						can_kill = tmp_can_kill;
@@ -192,7 +190,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 			}
 		}
 	}
-	printf("can kill: %d\n", can_kill);
 
 	int first_position, second_position;
 
@@ -224,7 +221,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 	}
 	
 	//pokud zabiju hráče a není zde další piece který lze přeskočit, končí tah - udělat strom možností do hloubky 1 (bfs)
-	//zkontrolovat všechny piece, zda mohou někoho v okolí sejmout (pokud ano, zjisti jeho souřadnice)
 	//udělat promote mana, pokuď dojde na konec pole
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
@@ -246,7 +242,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 						(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 						(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
 						(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece = NULL;
-						return;
 					}					
 					else {
 						send_message(current_player_socket_ID, "wrong_move;5;\n");
@@ -276,7 +271,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 						(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 						(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
 						(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece = NULL;
-						return;
 					}					
 					else {
 						send_message(current_player_socket_ID, "wrong_move;5;\n");
@@ -288,70 +282,63 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 					return;
 				}
 			}
-			else if (strcmp(type, "king") == 0) {
-				if (dp_row == (cp_row + second_position)) {
-					if (dp_col == (cp_col + second_position)) {
-						if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
-							if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) { 
-							
-								char correct_message[100];
-								sprintf(correct_message, "correct_move;3;%d;%d;%d;%d;%d;%d;\n", cp_row, cp_col, cp_row + first_position, cp_col + first_position, dp_row, dp_col);
+		}
+		else if (strcmp(type, "king") == 0) {
+			if (dp_row == (cp_row + second_position)) {
+				if (dp_col == (cp_col + second_position)) {
+					if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
+						if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) { 
+							char correct_message[100];
+							sprintf(correct_message, "correct_move;3;%d;%d;%d;%d;%d;%d;\n", cp_row, cp_col, cp_row + first_position, cp_col + first_position, dp_row, dp_col);
 
-								send_message(current_player_socket_ID, correct_message);  					
-								send_message(second_player_socket_ID, correct_message);
+							send_message(current_player_socket_ID, correct_message);  					
+							send_message(second_player_socket_ID, correct_message);
 
-								if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) != 0) {
-									send_message(current_player_socket_ID, "end_move;\n");
-									send_message(second_player_socket_ID, "play_next_player;\n");
-									(*all_games) -> games[game_ID] -> now_playing = second_player_name;
-								}
-								(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
-								(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
-								(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece = NULL;
-								return;
-							}					
-							else {
-								send_message(current_player_socket_ID, "wrong_move;5;\n");
-								return;
+							if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) != 0) {
+								send_message(current_player_socket_ID, "end_move;\n");
+								send_message(second_player_socket_ID, "play_next_player;\n");
+								(*all_games) -> games[game_ID] -> now_playing = second_player_name;
 							}
-						}
+							(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
+							(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
+							(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece = NULL;
+						}					
 						else {
-							send_message(current_player_socket_ID, "wrong_move;6;\n");
-							return;
-						}
-					}
-					else if (dp_col == (cp_col - second_position)) {	
-						if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
-							if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) { 
-							
-								char correct_message[100];
-								sprintf(correct_message, "correct_move;3;%d;%d;%d;%d;%d;%d;\n", cp_row, cp_col, cp_row + first_position, cp_col - first_position, dp_row, dp_col);
-
-								send_message(current_player_socket_ID, correct_message);  					
-								send_message(second_player_socket_ID, correct_message);
-
-								if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) != 0) {
-									send_message(current_player_socket_ID, "end_move;\n");
-									send_message(second_player_socket_ID, "play_next_player;\n");
-									(*all_games) -> games[game_ID] -> now_playing = second_player_name;
-								}
-								(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
-								(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
-								(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece = NULL;
-								return;
-							}					
-							else {
-								send_message(current_player_socket_ID, "wrong_move;5;\n");
-								return;
-							}
-						}
-						else {
-							send_message(current_player_socket_ID, "wrong_move;6;\n");
+							send_message(current_player_socket_ID, "wrong_move;5;\n");
 							return;
 						}
 					}
 					else {
-						send_message(current_player_socket_ID, "wrong_move;9;\n");
+						send_message(current_player_socket_ID, "wrong_move;6;\n");
+						return;
+					}
+				}
+				else if (dp_col == (cp_col - second_position)) {	
+					if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
+						if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) { 
+							
+							char correct_message[100];
+							sprintf(correct_message, "correct_move;3;%d;%d;%d;%d;%d;%d;\n", cp_row, cp_col, cp_row + first_position, cp_col - first_position, dp_row, dp_col);
+
+							send_message(current_player_socket_ID, correct_message);  					
+							send_message(second_player_socket_ID, correct_message);
+
+							if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) != 0) {
+								send_message(current_player_socket_ID, "end_move;\n");
+								send_message(second_player_socket_ID, "play_next_player;\n");
+								(*all_games) -> games[game_ID] -> now_playing = second_player_name;
+							}
+							(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
+							(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
+							(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece = NULL;
+						}					
+						else {
+							send_message(current_player_socket_ID, "wrong_move;5;\n");
+							return;
+						}
+					}
+					else {
+						send_message(current_player_socket_ID, "wrong_move;6;\n");
 						return;
 					}
 				}
@@ -386,7 +373,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 
 				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 				(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
-				return;
 			}					
 			else {
 				send_message(current_player_socket_ID, "wrong_move;7;\n");
@@ -408,7 +394,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 
 				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 				(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
-				return;
 			}					
 			else {
 				send_message(current_player_socket_ID, "wrong_move;5;\n");
@@ -431,7 +416,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 
 					(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 					(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
-					return;
 				}					
 				else {
 					send_message(current_player_socket_ID, "wrong_move;7;\n");
@@ -453,7 +437,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 
 					(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 					(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
-					return;
 				}					
 				else {
 					send_message(current_player_socket_ID, "wrong_move;5;\n");
@@ -470,6 +453,27 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 			return;
 		}
 	}	
+	
+	if (strcmp(type, "man") == 0) {
+		char message_promote[100];
+		
+		if (strcmp(color, "white") == 0) {
+			if (dp_row == 0) {
+				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
+				sprintf(message_promote, "promote;%d;%d;\n", dp_row, dp_col);
+				send_message(current_player_socket_ID, message_promote);
+				send_message(second_player_socket_ID, message_promote);
+			}
+		}
+		else {
+			if (dp_row == 9) {
+				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
+				sprintf(message_promote, "promote;%d;%d;\n", dp_row, dp_col);
+				send_message(current_player_socket_ID, message_promote);
+				send_message(second_player_socket_ID, message_promote);
+			}
+		}
+	}
 }
 
 
@@ -499,7 +503,7 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 			if (fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
 				if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) {
 					if((cp_row - second_position) >= 0 && (cp_col + second_position) <= 9) {	
-						if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {				
+						if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {			
 							return 1;
 						}
 					}
