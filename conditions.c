@@ -168,17 +168,16 @@ void send_all_kill(games **all_games, int game_ID, int cp_row, int cp_col, int m
 	(*all_games) -> games[game_ID] -> fields -> all_fields[middle_row][middle_col] -> piece = NULL;
 }
 
-//
+//0 - nothing
+//1 - correct_move
+//2 - wrong move
 int all_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col - first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece == NULL) { 
-			
-			send_all_no_kill(all_games, game_ID, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name);
 			return 1;
 		}					
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;7;\n");
-			return 2;
+			return 27;
 		}
 	}
 	else return 0;
@@ -188,13 +187,10 @@ int all_first_move_no_kill(games **all_games, int game_ID, int first_position, i
 int all_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col + first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece == NULL) { 
-			
-			send_all_no_kill(all_games, game_ID, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name);
 			return 1;
 		}					
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;5;\n");
-			return 2;
+			return 25;
 		}
 	}
 	else return 0;
@@ -204,13 +200,10 @@ int all_second_move_no_kill(games **all_games, int game_ID, int first_position, 
 int king_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col + first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece == NULL) { 
-
-			send_all_no_kill(all_games, game_ID, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name);
 			return 1;
 		}					
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;7;\n");
-			return 2;
+			return 27;
 		}
 	}
 	else return 0;
@@ -220,13 +213,10 @@ int king_first_move_no_kill(games **all_games, int game_ID, int first_position, 
 int king_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col - first_position)) ) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece == NULL) { 
-
-			send_all_no_kill(all_games, game_ID, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name);
 			return 1;
 		}					
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;5;\n");
-			return 2;
+			return 25;
 		}
 	}
 	else return 0;
@@ -237,18 +227,14 @@ int all_first_move_kill(games **all_games, int game_ID, int first_position, int 
 	if (dp_col == (cp_col - second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
 			if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) != 0) { 
-								
-				send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row-first_position, cp_col-first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
-				return 1;
+				return 100;
 			}					
 			else {
-				send_message(curr_pl_socket_ID, "wrong_move;5;\n");
-				return 2;
+				return 25;
 			}						
 		}
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;6;\n");
-			return 2;
+			return 26;
 		}
 	}
 	else return 0;
@@ -259,18 +245,14 @@ int all_second_move_kill(games **all_games, int game_ID, int first_position, int
 	if (dp_col == (cp_col + second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
 			if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) { 
-
-				send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row-first_position, cp_col+first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
-				return 1;
+				return 101;
 			}					
 			else {
-				send_message(curr_pl_socket_ID, "wrong_move;5;\n");
-				return 2;
+				return 25;
 			}
 		}
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;6;\n");
-			return 2;
+			return 26;
 		}
 	}
 	else return 0;
@@ -281,18 +263,14 @@ int king_first_move_kill(games **all_games, int game_ID, int first_position, int
 	if (dp_col == (cp_col + second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
 			if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) { 
-
-				send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row+first_position, cp_col+first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
-				return 1;
+				return 111;
 			}					
 			else {
-				send_message(curr_pl_socket_ID, "wrong_move;5;\n");
-				return 2;
+				return 25;
 			}
 		}
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;6;\n");
-			return 2;
+			return 26;
 		}
 	}
 	else return 0;
@@ -303,19 +281,14 @@ int king_second_move_kill(games **all_games, int game_ID, int first_position, in
 	if (dp_col == (cp_col - second_position)) {	
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
 			if (strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) { 
-
-				send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row+first_position, cp_col-first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
-				return 1;
-							
+				return 110;			
 			}					
 			else {
-				send_message(curr_pl_socket_ID, "wrong_move;5;\n");
-				return 2;
+				return 25;
 			}
 		}
 		else {
-			send_message(curr_pl_socket_ID, "wrong_move;6;\n");
-			return 2;
+			return 26;
 		}
 	}
 	else return 0;

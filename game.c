@@ -226,19 +226,27 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
 			int first_move_kill = all_first_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, 					second_player_name, color, type);
-			if (first_move_kill == 1 || first_move_kill == 2) return;
+
+			int if_return = switch_kill(first_move_kill, all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, 					second_player_name, color, type);
+			if (if_return == 1) return;
 
 			int second_move_kill = all_second_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, 					second_player_name, color, type);
-			if (second_move_kill == 1 || second_move_kill == 2) return;
+			
+			if_return = switch_kill(second_move_kill, all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name, color, type);
+			if (if_return == 1) return;
 			
 		}
 		else if (strcmp(type, "king") == 0) {
 			if (dp_row == (cp_row + second_position)) {
 				int first_move_kill = king_first_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, 							current_player_socket_ID, second_player_socket_ID, second_player_name, color, type);
-				if (first_move_kill == 1 || first_move_kill == 2) return;
+				
+				int if_return = switch_kill(first_move_kill, all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, 						second_player_name, color, type);
+				if (if_return == 1) return;
 
 				int second_move_kill = king_second_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, 							current_player_socket_ID, second_player_socket_ID, second_player_name, color, type);
-				if (second_move_kill == 1 || second_move_kill == 2) return;
+
+				if_return = switch_kill(second_move_kill, all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, 						second_player_name, color, type);
+				if (if_return == 1) return;
 
 				send_message(current_player_socket_ID, "wrong_move;9;\n");
 				return;
@@ -255,17 +263,25 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 	}
 	else {
 		int first_move_no_kill = all_first_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
-		if (first_move_no_kill == 1 || first_move_no_kill == 2) return;
+			
+		int if_return = switch_no_kill(first_move_no_kill, all_games, game_ID, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
+		if (if_return == 1) return;
 
 		int second_move_no_kill = all_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
-		if (second_move_no_kill == 1 || second_move_no_kill == 2) return;
+				
+		if_return = switch_no_kill(second_move_no_kill, all_games, game_ID, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
+		if (if_return == 1) return;
 
 		if (strcmp(type, "king") == 0) {
 			first_move_no_kill = king_first_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
-			if (first_move_no_kill == 1 || first_move_no_kill == 2) return;
+			
+			if_return = switch_no_kill(first_move_no_kill, all_games, game_ID, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
+			if (if_return == 1) return;
 
 			second_move_no_kill = king_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
-			if (second_move_no_kill == 1 || second_move_no_kill == 2) return;	
+			
+			if_return = switch_no_kill(second_move_no_kill, all_games, game_ID, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name);
+			if (if_return == 1) return;
 
 			send_message(current_player_socket_ID, "wrong_move;4;\n");
 			return;
@@ -295,5 +311,47 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 				send_message(second_player_socket_ID, message_promote);
 			}
 		}
+	}
+}
+
+int switch_no_kill(int value, games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+	switch (value) {
+		case 1:
+			send_all_no_kill(all_games, game_ID, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name);
+			return 1;
+		case 25:
+			send_message(curr_pl_socket_ID, "wrong_move;5;\n");
+			return 1;
+		case 27:
+			send_message(curr_pl_socket_ID, "wrong_move;7;\n");
+			return 1;
+		defaut:
+			return 0;
+	}
+}
+
+int switch_kill(int value, games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
+	switch (value) {
+		case 100:
+			send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row - first_position, cp_col - first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
+			return 1;
+		case 101:
+			send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row - first_position, cp_col + first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
+			return 1;
+		case 111:
+			send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row + first_position, cp_col + first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
+			return 1;
+		case 110:
+			send_all_kill(all_games, game_ID, cp_row, cp_col, cp_row + first_position, cp_col - first_position, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sec_pl_name, color, type);
+			return 1;
+		case 25:
+			send_message(curr_pl_socket_ID, "wrong_move;5;\n");
+			return 1;
+
+		case 26:
+			send_message(curr_pl_socket_ID, "wrong_move;6;\n");
+			return 1;
+		defaut:
+			return 0;
 	}
 }
