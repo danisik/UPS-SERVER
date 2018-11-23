@@ -92,11 +92,13 @@ int main (void)
 
 						char *tok = strtok(cbuf, ";");
 						char *type_message = tok;
+
 						if (strcmp(type_message, "login") == 0) {	
-							//login;name;
+
 							tok = strtok(NULL, ";");
 							char *name = tok;
 		
+							
 							if (name_exists(array_clients, name) == 0) {								
 								if ((array_clients -> clients_count) < (max_players)) {
 									add_client(&array_clients, name, fd);
@@ -104,15 +106,27 @@ int main (void)
 									send_message(fd, "login_ok;\n");					
 								}
 								else {
-									send_message(fd, "login_false;Too much Players online;\n");
+									send_message(fd, "login_false;1;\n");
 								}		
 							}
 							else {
-								send_message(fd, "login_false;This name is already taken;\n");
+								//zkontrolovat podle jména stav clienta - pokud je disconnect, tak možnost připojení a přepsat socket ID
+								char *state = get_state_by_name(array_clients, name);
+								if (strcmp(state, "disconnect") == 0) {
+									set_socket_ID(&array_clients, name, fd);
+									set_state(&array_clients, name, "playing"); 
+
+									//board;pocet_piece;x;y;color;type;........;									
+									char board[1024];
+									
+									send_message(fd, board);									
+								}
+								else {
+									send_message(fd, "login_false;2;\n");
+								}								
 							} 
 						}
 						else if (strcmp(type_message, "play") == 0) {
-							//play;
 							add_wanna_play(&wanna_plays, fd);
 							char *name = get_name_by_socket_ID(array_clients, fd);
 							set_state(&array_clients, name, state_wanna_play);
@@ -167,9 +181,6 @@ int main (void)
 							} 
 						}
 						else if (strcmp(type_message, "client_move") == 0) {
-							//client_move;game_ID;current_position;destination_position;color;type;
-							//pr. client_move;1;0,1;0,3;black;man;
-							
 							int i = 0;
 							char *array[10];
 						
@@ -205,7 +216,8 @@ int main (void)
 					else {
 						close(fd);
 						FD_CLR(fd, &client_socks);
-						client_remove(&array_clients, &wanna_plays, fd);
+						//client_remove(&array_clients, &wanna_plays, fd);
+						set_state(&array_clients, get_name_by_socket_ID(array_clients, fd), "disconnect"); 			
 						//pokud hraje hru, tak čekat, popřípadě hru rovnou vymazat
 					}
 				}

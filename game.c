@@ -182,18 +182,17 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 	
 	int can_move = -1;
 	if (can_kill == 0) {
-		can_move = check_if_can_move(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name, color);
+		can_move = check_if_can_move(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name, color, type);
 	}
 	
 	
 	if (can_move == 0) {
-		//hráč už nemůže hrát, zkontrolovat i druhého hráče, pokud taky nebude moct, je to remíza, jinak vyhrál on
 		char opponent_color[10];
 		if (strcmp(color, "white") == 0) strcpy(opponent_color, "black");
 		else strcpy(opponent_color, "white");
 
 		int can_move_opponent = -1;
-		can_move_opponent = check_if_can_move(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name, opponent_color);
+		can_move_opponent = check_if_can_move(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, second_player_name, opponent_color, type);
 
 		if (can_move_opponent == 0) {
 			send_message(current_player_socket_ID, "end_game;draw;\n");
@@ -223,7 +222,6 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 		}
 	}
 	
-	//kontrola, jestli hráč může hrát alespoň jednou figurkou
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
 			int first_move_kill = all_first_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, current_player_socket_ID, second_player_socket_ID, 					second_player_name, color, type);
@@ -357,7 +355,7 @@ int switch_kill(int value, games **all_games, int game_ID, int first_position, i
 	}
 }
 
-int check_if_can_move(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sc_pl_name, char *color) {
+int check_if_can_move(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sc_pl_name, char *color, char *type) {
 	int i, j, value;
 	for (i = 0; i < (*all_games) -> games[game_ID] -> fields -> size; i++) {
 		for (j = 0; j < (*all_games) -> games[game_ID] -> fields -> size; j++) {
@@ -367,11 +365,13 @@ int check_if_can_move(games **all_games, int game_ID, int first_position, int cp
 			value = all_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sc_pl_name, color);
 			if (value == 1) return 1;
 
-			value = king_first_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sc_pl_name, color);
-			if (value == 1) return 1;
+			if (strcmp(type, "king") == 0) {
+				value = king_first_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sc_pl_name, color);
+				if (value == 1) return 1;
 
-			value = king_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sc_pl_name, color);
-			if (value == 1) return 1;
+				value = king_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, curr_pl_socket_ID, sec_pl_socket_ID, sc_pl_name, color);
+				if (value == 1) return 1;
+			}
 		}
 	}
 	return 0;

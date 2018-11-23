@@ -118,3 +118,28 @@ char *get_color_by_name(clients *array_clients, char *name) {
 		}
 	}
 }
+
+char *get_state_by_name(clients *array_clients, char *name) {
+	int i;
+	int count = array_clients -> clients_count;
+	char *client_name;	
+	for (i = 0; i < count; i++) {
+		client_name = array_clients -> clients[i] -> name;
+		if (strcmp(name, client_name) == 0) {
+			return array_clients -> clients[i] -> state;
+		}
+	}
+}
+
+void set_socket_ID(clients **array_clients, char *name, int socket_ID) {
+	int i;
+	int count = (*array_clients) -> clients_count;
+	char *client_name;	
+	for (i = 0; i < count; i++) {
+		client_name = (*array_clients) -> clients[i] -> name;
+		if (strcmp(name, client_name) == 0) {
+			(*array_clients) -> clients[i] -> socket_ID = socket_ID;
+			return;
+		}
+	}
+}

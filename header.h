@@ -69,6 +69,8 @@ void set_state(clients **array_clients, char *name, char *state);
 char *get_name_by_socket_ID(clients *array_clients, int socket_ID);
 int get_socket_ID_by_name(clients *array_clients, char *name);
 char *get_color_by_name(clients *array_clients, char *name);
+char *get_state_by_name(clients *array_clients, char *name);
+void set_socket_ID(clients **array_clients, char *name, int socket_ID);
 
 //conditions.c
 int check_can_kill(games **all_games, int game_ID, char *color, char *type);
@@ -102,7 +104,7 @@ void restore_game();
 void process_move(games **all_games, clients *clients, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type);
 int switch_no_kill(int value, games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name);
 int switch_kill(int value, games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
-int check_if_can_move(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sc_pl_name, char *color);
+int check_if_can_move(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sc_pl_name, char *color, char *type);
 
 //free.c
 void free_client();
