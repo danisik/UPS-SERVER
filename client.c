@@ -86,6 +86,7 @@ void set_state_by_socket_ID(clients **array_clients, int socket_ID, char *state)
 	for (i = 0; i < count; i++) {
 		socket = (*array_clients) -> clients[i] -> socket_ID;
 		if (socket == socket_ID) {
+			if (strcmp(state, "disconnect") == 0) printf("Client with name %s disconnected", (*array_clients) -> clients[i] -> name);
 			strcpy((*array_clients) -> clients[i] -> state, state);
 			return;
 		}

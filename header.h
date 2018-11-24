@@ -61,6 +61,11 @@ struct the_games {
 int name_exists (clients *array_clients, char *name);
 void send_message(int client_socket, char *message);
 
+void login(clients **array_clients, games *all_games, char *tok, int max_players, int fd);
+void reconnect(clients **array_clients, games *all_games, char *name, int fd);
+void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, int fd);
+void client_move(games **all_games, clients *array_clients, char *tok);
+
 //client.c
 void create_clients(clients **array_clients);
 void create_client(client **cl, char *name, int socket_ID);
