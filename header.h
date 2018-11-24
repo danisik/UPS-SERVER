@@ -11,7 +11,7 @@ struct the_client {
 	char *name;
 	int socket_ID;
 	char *color;
-	char *state;
+	char state[20];
 };
 
 struct the_clients {
@@ -34,6 +34,7 @@ struct the_field {
 struct the_fields {
 	int size; //10
 	field ***all_fields;
+	int count_pieces;
 };
 
 struct the_wanna_play {
@@ -45,6 +46,7 @@ struct the_game {
 	char *name_1;
 	char *name_2;
 	char *now_playing;
+	int game_ID;
 	fields *fields;
 };
 
@@ -65,10 +67,12 @@ void create_client(client **cl, char *name, int socket_ID);
 void add_client(clients **array_clients, char *name, int socket_ID);
 void client_remove(clients **array_clients, wanna_play **wanna_plays, int socket_ID);
 void set_color(clients **array_clients, int socket_ID, char *color);
-void set_state(clients **array_clients, char *name, char *state);
+void set_state_by_name(clients **array_clients, char *name, char *state);
+void set_state_by_socket_ID(clients **array_clients, int socket_ID, char *state);
 char *get_name_by_socket_ID(clients *array_clients, int socket_ID);
 int get_socket_ID_by_name(clients *array_clients, char *name);
 char *get_color_by_name(clients *array_clients, char *name);
+char *get_color_by_socket_ID(clients *array_clients, int socket_ID);
 char *get_state_by_name(clients *array_clients, char *name);
 void set_socket_ID(clients **array_clients, char *name, int socket_ID);
 
@@ -105,6 +109,7 @@ void process_move(games **all_games, clients *clients, int game_ID, int cp_row, 
 int switch_no_kill(int value, games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name);
 int switch_kill(int value, games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
 int check_if_can_move(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sc_pl_name, char *color, char *type);
+game *find_game_by_name(games *all_games, char *name);
 
 //free.c
 void free_client();

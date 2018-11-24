@@ -91,6 +91,8 @@ void create_fields(game **gm) {
 
 	inicialize_pieces(&fields, color_black, 0, 0);
 	inicialize_pieces(&fields, color_white, 6, 0);
+	
+	fields -> count_pieces = 40;
 	(*gm) -> fields = fields; 	
 }
 
@@ -109,6 +111,7 @@ void add_game(games **all_games, char *name_1, char *name_2, char *now_playing) 
 	game *game = NULL;
 	create_game(&game, name_1, name_2, now_playing);
 	(*all_games) -> games[((*all_games) -> games_count) - 1] = game;
+	(*all_games) -> games[((*all_games) -> games_count) - 1] -> game_ID = ((*all_games) -> games_count) - 1;
 }
 
 void remove_game(clients **clients, games **all_games, int game_ID) {
@@ -125,7 +128,8 @@ void remove_game(clients **clients, games **all_games, int game_ID) {
 			(*all_games) -> games[((*all_games) -> games_count)] = NULL;			
 			(*all_games) -> games = realloc((*all_games) -> games, (*all_games) -> games_count * sizeof(game));
 			index = i;			
-			return;
+			(*all_games) -> games[((*all_games) -> games_count) - 1] -> game_ID = index;
+			break;
 		}
 	}
 	char *message;
@@ -375,4 +379,13 @@ int check_if_can_move(games **all_games, int game_ID, int first_position, int cp
 		}
 	}
 	return 0;
+}
+
+game *find_game_by_name(games *all_games, char *name) {
+	int i;
+	for (i = 0; i < all_games -> games_count; i++) {
+		if (strcmp(name, all_games -> games[i] -> name_1) == 0 || strcmp(name, all_games -> games[i] -> name_2) == 0) {
+			return all_games -> games[i];
+		}  
+	}
 }

@@ -166,6 +166,7 @@ void send_all_kill(games **all_games, int game_ID, int cp_row, int cp_col, int m
 	(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 	(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
 	(*all_games) -> games[game_ID] -> fields -> all_fields[middle_row][middle_col] -> piece = NULL;
+	(*all_games) -> games[game_ID] -> fields -> count_pieces--;
 }
 
 //0 - nothing

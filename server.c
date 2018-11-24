@@ -114,11 +114,34 @@ int main (void)
 								char *state = get_state_by_name(array_clients, name);
 								if (strcmp(state, "disconnect") == 0) {
 									set_socket_ID(&array_clients, name, fd);
-									set_state(&array_clients, name, "playing"); 
+									set_state_by_name(&array_clients, name, "playing"); 
 
 									//board;pocet_piece;x;y;color;type;........;									
 									char board[1024];
+									game *game = find_game_by_name(all_games, name);
 									
+									sprintf(board, "board;%s;%s;%d;%d;", name, get_color_by_socket_ID(array_clients, fd), game -> game_ID, game -> fields -> count_pieces);
+									
+									int i,j;
+									for (i = 0; i < game -> fields -> size; i++) {
+										for(j = 0; j < game -> fields -> size; j++) {
+											if (game -> fields -> all_fields[i][j] -> piece != NULL) {
+												char x[3], y[3];
+
+												sprintf(x, "%d;", i);
+												sprintf(y, "%d;", j);
+											
+												strcat(board, x);
+												strcat(board, y);
+												strcat(board, game -> fields -> all_fields[i][j] -> piece -> color);
+												strcat(board, ";");
+												strcat(board, game -> fields -> all_fields[i][j] -> piece -> type);
+												strcat(board, ";");
+												
+											}
+										}
+									}
+									strcat(board, "\n");
 									send_message(fd, board);									
 								}
 								else {
@@ -129,7 +152,7 @@ int main (void)
 						else if (strcmp(type_message, "play") == 0) {
 							add_wanna_play(&wanna_plays, fd);
 							char *name = get_name_by_socket_ID(array_clients, fd);
-							set_state(&array_clients, name, state_wanna_play);
+							set_state_by_name(&array_clients, name, state_wanna_play);
 							if ((wanna_plays -> size) >= 2) {
 								int socket_ID_1 = fd;
 								int socket_ID_2;
@@ -171,8 +194,8 @@ int main (void)
 								}
 							
 
-								set_state(&array_clients, name_1, state_playing);
-								set_state(&array_clients, name_2, state_playing);
+								set_state_by_name(&array_clients, name_1, state_playing);
+								set_state_by_name(&array_clients, name_2, state_playing);
 
 								add_game(&all_games, name_1, name_2, now_playing);
 
@@ -217,7 +240,7 @@ int main (void)
 						close(fd);
 						FD_CLR(fd, &client_socks);
 						//client_remove(&array_clients, &wanna_plays, fd);
-						set_state(&array_clients, get_name_by_socket_ID(array_clients, fd), "disconnect"); 			
+						set_state_by_socket_ID(&array_clients, fd, "disconnect");
 						//pokud hraje hru, tak čekat, popřípadě hru rovnou vymazat
 					}
 				}
