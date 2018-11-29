@@ -135,15 +135,15 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 }
 
 //
-void send_all_no_kill(games **all_games, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+void send_all_no_kill(games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	char correct_message[100];
 	sprintf(correct_message, "correct_move;2;%d;%d;%d;%d;\n", cp_row, cp_col, dp_row, dp_col);
 
-	send_message(curr_pl_socket_ID, correct_message);  		
-	send_message(sec_pl_socket_ID, correct_message);
+	send_message(curr_pl_socket_ID, correct_message, info);  		
+	send_message(sec_pl_socket_ID, correct_message, info);
 
-	send_message(curr_pl_socket_ID, "end_move;\n");
-	send_message(sec_pl_socket_ID, "play_next_player;\n");
+	send_message(curr_pl_socket_ID, "end_move;\n", info);
+	send_message(sec_pl_socket_ID, "play_next_player;\n", info);
 	(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
 
 	(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
@@ -151,15 +151,15 @@ void send_all_no_kill(games **all_games, int game_ID, int cp_row, int cp_col, in
 }
 
 //
-void send_all_kill(games **all_games, int game_ID, int cp_row, int cp_col, int middle_row, int middle_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
+void send_all_kill(games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int middle_row, int middle_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
 	char correct_message[100];
 	sprintf(correct_message, "correct_move;3;%d;%d;%d;%d;%d;%d;\n", cp_row, cp_col, middle_row, middle_col, dp_row, dp_col);
 
-	send_message(curr_pl_socket_ID, correct_message);  					
-	send_message(sec_pl_socket_ID, correct_message);
+	send_message(curr_pl_socket_ID, correct_message, info);  					
+	send_message(sec_pl_socket_ID, correct_message, info);
 	if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) != 0) {
-		send_message(curr_pl_socket_ID, "end_move;\n");
-		send_message(sec_pl_socket_ID, "play_next_player;\n");
+		send_message(curr_pl_socket_ID, "end_move;\n", info);
+		send_message(sec_pl_socket_ID, "play_next_player;\n", info);
 		(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
 	}
 					

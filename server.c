@@ -8,12 +8,19 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <signal.h>
 #include "header.h"
+
+void sigint_handler(int sig);
+log_info *info; 
+char *filename = "log.txt";
+
+struct timeval server_start;
+struct timeval server_end;
 
 int main (void)
 {
 	int max_players = 32;
-	char *filename = "log.txt";
 
 	remove(filename);
 
@@ -32,11 +39,8 @@ int main (void)
 
 	struct timeval client_timeout;
 	client_timeout.tv_sec = 300; //5 min
-	
-	struct timeval server_start;
-	gettimeofday(&server_start, NULL);		
 
-	struct timeval server_end;
+	info = calloc(1, sizeof(info));
 
 	int count_bytes = 0;
 	int count_messages = 0;
@@ -58,6 +62,7 @@ int main (void)
 	int param = 1;
         return_value = setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&param, sizeof(int));
 	
+	gettimeofday(&server_start, NULL);	
 
 	if (return_value == -1)	printf("setsockopt ERR\n");
 
@@ -85,7 +90,8 @@ int main (void)
 	FD_ZERO(&client_socks);
 	FD_SET(server_socket, &client_socks);
 
-	while(1) {
+	signal(SIGINT, sigint_handler);
+	while(1) {	
 		tests = client_socks;
 
 		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, (fd_set*)NULL, &client_timeout);
@@ -95,7 +101,6 @@ int main (void)
 			return -1;
 		}
 		else if (return_value == 0) {
-			//timeout
 			delete_connection(&array_clients, &wanna_plays, &client_socks, fd);
 			printf("Client with socket id %d timeouted\n", fd);
 		}
@@ -105,6 +110,7 @@ int main (void)
 				if (fd == server_socket) {
 					client_socket = accept(server_socket, (struct sockaddr *) &peer_addr, &len_addr);
 					FD_SET(client_socket, &client_socks);
+					info -> count_connections++;
 				}
 				else {
 					int int_ioctl = ioctl(fd, FIONREAD, &a2read);
@@ -128,18 +134,17 @@ int main (void)
 		
 								if (strcmp(type_message, "login") == 0) {	
 		
-									login(&array_clients, all_games, tok, max_players, fd);
+									login(&array_clients, all_games, &info, tok, max_players, fd);
 								}
 								else if (strcmp(type_message, "play") == 0) {
 									
-									play(&array_clients, &wanna_plays, &all_games, fd);
+									play(&array_clients, &wanna_plays, &all_games, &info, fd);
 								}
 								else if (strcmp(type_message, "client_move") == 0) {
 		
-									client_move(&all_games, array_clients, tok);
+									client_move(&all_games, array_clients, &info, tok);
 								}
 								else if (strcmp(type_message, "new_game_no") == 0) {
-									//vymazat z pole klientů
 									client_remove(&array_clients, &wanna_plays, fd);
 								}
 								else {
@@ -159,14 +164,15 @@ int main (void)
 			}
 		}
 	}	
-
-	gettimeofday(&server_end, NULL);
-
-	int server_running_minutes = server_running(server_start, server_end);
-	log_all(filename, count_bytes, count_messages, count_connections, count_bad_transmissions, server_running_minutes);
 	return 0;
 }
 
+void sigint_handler(int sig) {
+	gettimeofday(&server_end, NULL);
+
+	server_running(server_start, server_end, &info);
+	log_all(filename, info);
+}
 
 //return: 0 - not contains name
 //	  1 - contains name
@@ -181,13 +187,16 @@ int name_exists (clients *array_clients, char *name) {
 	return 0;
 }
 
-void send_message(int client_socket, char *message) {	
+void send_message(int client_socket, char *message, log_info **info) {	
 	printf("Message: %s\n", message);
 	send(client_socket, message, strlen(message) * sizeof(char), 0);
+	
+	(*info) -> count_bytes += strlen(message) + 1;
+	(*info) -> count_messages++;
 }
 
 
-void login(clients **array_clients, games *all_games, char *tok, int max_players, int fd) {
+void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd) {
 	tok = strtok(NULL, ";");
 	char *name = tok;
 		
@@ -197,24 +206,27 @@ void login(clients **array_clients, games *all_games, char *tok, int max_players
 			add_client(array_clients, name, fd);
 	
 			printf("Name: %s\n", (*array_clients) -> clients[(*array_clients) -> clients_count -1] -> name);
-			send_message(fd, "login_ok;\n");					
+			char *message = "login_ok;\n";
+			send_message(fd, message, info);					
 		}
 		else {
-			send_message(fd, "login_false;1;\n");
+			char *message = "login_false;1;\n";
+			send_message(fd, message, info);
 		}		
 	}
 	else {
 		char *state = get_state_by_name((*array_clients), name);
 		if (strcmp(state, "disconnect") == 0) {
-			reconnect(array_clients, all_games, name, fd);									
+			reconnect(array_clients, all_games, info, name, fd);									
 		}
 		else {
-			send_message(fd, "login_false;2;\n");
+			char *message = "login_false;2;\n";
+			send_message(fd, message, info);
 		}								
 	} 
 }
 
-void reconnect(clients **array_clients, games *all_games, char *name, int fd) {
+void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd) {
 	set_socket_ID(array_clients, name, fd);
 	set_state_by_name(array_clients, name, "playing"); 
 								
@@ -242,10 +254,10 @@ void reconnect(clients **array_clients, games *all_games, char *name, int fd) {
 		}
 	}
 	strcat(board, "\n");
-	send_message(fd, board);
+	send_message(fd, board, info);
 }
 
-void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, int fd) {
+void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd) {
 	add_wanna_play(wanna_plays, fd);
 	char *name = get_name_by_socket_ID(*array_clients, fd);
 	set_state_by_name(array_clients, name, "wanna_play");
@@ -295,12 +307,12 @@ void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, 
 
 		add_game(all_games, name_1, name_2, now_playing);
 
-		send_message(socket_ID_1, message_1);
-		send_message(socket_ID_2, message_2);
+		send_message(socket_ID_1, message_1, info);
+		send_message(socket_ID_2, message_2, info);
 	}
 }
 
-void client_move(games **all_games, clients *array_clients, char *tok) {
+void client_move(games **all_games, clients *array_clients, log_info **info, char *tok) {
 	int i = 0;
 	char *array[10];
 						
@@ -321,7 +333,7 @@ void client_move(games **all_games, clients *array_clients, char *tok) {
 			
 	printf("Move: GID=%d CP=%d,%d DP=%d,%d COLOR=%s TYPE=%s\n", game_ID, cp_row, cp_col, dp_row, dp_col, color, piece);
 							
-	process_move(all_games, array_clients, game_ID, cp_row, cp_col, dp_row, dp_col, color, piece); 
+	process_move(all_games, array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, piece); 
 }
 
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd) {
@@ -343,7 +355,21 @@ void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set
 //	3.úspěšný connect
 //	4.počet bitů, které se přenesli a nevyužili jsme je
 //	5.nazačátku si uložit čas, při ukončení čas, z toho zjistit jak dlouho běžel server
-void my_log(char *filename, char *message) {
+
+void log_all(char *filename, log_info *info) {
+
+	char message_count_bytes[100];
+	char message_count_messages[100];
+	char message_count_connections[100];
+	char message_count_bad_transmissions[100];	
+	char message_server_running[100];
+		
+	sprintf(message_count_bytes, "Bytes sent: %d\n", info -> count_bytes);
+	sprintf(message_count_messages, "Messages sent: %d\n", info -> count_messages);
+	sprintf(message_count_connections, "Clients connected: %d\n", info -> count_connections);
+	sprintf(message_count_bad_transmissions, "Unused bytes sent: %d\n", info -> count_bad_transmissions);
+	sprintf(message_server_running, "Server ran for %d minutes\n", info -> server_running_minutes);
+
 	FILE *fptr;
 	fptr = fopen(filename, "r+");
 	if(fptr == NULL) 
@@ -351,22 +377,16 @@ void my_log(char *filename, char *message) {
 	    fptr = fopen(filename, "wb");
 	}
 
-	fprintf(fptr, message);
+	fprintf(fptr, message_count_bytes);
+	fprintf(fptr, message_count_messages);
+	fprintf(fptr, message_count_connections);
+	fprintf(fptr, message_count_bad_transmissions);
+	fprintf(fptr, message_server_running);
 
 	fclose(fptr);	
 }
 
-void log_all(char *filename, int count_bytes, int count_messages, int count_connections, int count_bad_transmissions, int server_running_minutes) {
+void server_running(struct timeval start, struct timeval end, log_info **info) {
 
-	//char message_server_running[100];
-	//sprintf(message_server_running, "Server running (in minutes): %d", minutes); 
-	//my_log(filename, message_server_running);
-}
-
-int server_running(struct timeval start, struct timeval end) {
-	int result_in_minutes = 0;
-
-	result_in_minutes = (end.tv_sec - start.tv_sec) / 60;
-
-	return result_in_minutes;
+	(*info) -> server_running_minutes = (end.tv_sec - start.tv_sec) / 60;
 }
