@@ -19,6 +19,7 @@ void add_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 	printf("socket_ID %d want play a game\n", socket_ID);
 	(*wanna_plays) -> socket_IDs = realloc((*wanna_plays) -> socket_IDs, (*wanna_plays) -> size * sizeof(int));
 	(*wanna_plays) -> socket_IDs[((*wanna_plays) -> size) - 1] = socket_ID;
+
 	printf("%d client/s wanna play a game:\n", (*wanna_plays) -> size);
 }
 
@@ -34,10 +35,11 @@ void remove_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 				(*wanna_plays) -> socket_IDs[i] = (*wanna_plays) -> socket_IDs[((*wanna_plays) -> size)];								
 			}	
 			(*wanna_plays) -> socket_IDs = realloc((*wanna_plays) -> socket_IDs, (*wanna_plays) -> size * sizeof(wanna_play));
+			printf("socket ID %d removed from queue\n", socket_ID);
+			printf("%d client/s wanna play a game:\n", (*wanna_plays) -> size);
 			return;
 		}
 	}
-	printf("socket ID %d removed from queue\n", socket_ID);
 }
 
 void create_games(games **all_games) {

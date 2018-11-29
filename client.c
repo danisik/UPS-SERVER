@@ -24,6 +24,7 @@ void create_client(client **cl, char *name, int socket_ID) {
 
 void add_client(clients **array_clients, char *name, int socket_ID) {
 	(*array_clients) -> clients_count++;
+
 	printf("Clients count: %d\n", (*array_clients) -> clients_count);
 	(*array_clients) -> clients = realloc((*array_clients) -> clients, (*array_clients) -> clients_count * sizeof(client));
 	client *client = NULL;
@@ -46,6 +47,7 @@ void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_
 			}
 			(*array_clients) -> clients[((*array_clients) -> clients_count)] = NULL;			
 			(*array_clients) -> clients = realloc((*array_clients) -> clients, (*array_clients) -> clients_count * sizeof(client));
+
 			printf("Client left, actually logged clients: %d\n", (*array_clients) -> clients_count);	
 			return;
 		}
@@ -86,7 +88,6 @@ void set_state_by_socket_ID(clients **array_clients, int socket_ID, char *state)
 	for (i = 0; i < count; i++) {
 		socket = (*array_clients) -> clients[i] -> socket_ID;
 		if (socket == socket_ID) {
-			if (strcmp(state, "disconnect") == 0) printf("Client with name %s disconnected", (*array_clients) -> clients[i] -> name);
 			strcpy((*array_clients) -> clients[i] -> state, state);
 			return;
 		}
@@ -103,6 +104,7 @@ char *get_name_by_socket_ID(clients *array_clients, int socket_ID) {
 			return array_clients -> clients[i] -> name;
 		}
 	}
+	return NULL;
 }
 
 int get_socket_ID_by_name(clients *array_clients, char *name) {
@@ -127,6 +129,7 @@ char *get_color_by_name(clients *array_clients, char *name) {
 			return array_clients -> clients[i] -> color;
 		}
 	}
+	return NULL;
 }
 
 char *get_color_by_socket_ID(clients *array_clients, int socket_ID) {
@@ -139,6 +142,7 @@ char *get_color_by_socket_ID(clients *array_clients, int socket_ID) {
 			return array_clients -> clients[i] -> color;
 		}
 	}
+	return NULL;
 }
 
 char *get_state_by_name(clients *array_clients, char *name) {
@@ -151,6 +155,7 @@ char *get_state_by_name(clients *array_clients, char *name) {
 			return array_clients -> clients[i] -> state;
 		}
 	}
+	return NULL;
 }
 
 void set_socket_ID(clients **array_clients, char *name, int socket_ID) {
@@ -164,4 +169,18 @@ void set_socket_ID(clients **array_clients, char *name, int socket_ID) {
 			return;
 		}
 	}
+}
+
+client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
+	int i;
+	int count = array_clients -> clients_count;
+	int socket;	
+	printf("%d", socket);
+	for (i = 0; i < count; i++) {
+		socket = array_clients -> clients[i] -> socket_ID;
+		if (socket == socket_ID) {
+			return array_clients -> clients[i];
+		}
+	}
+	return NULL;
 }

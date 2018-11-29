@@ -65,6 +65,10 @@ void login(clients **array_clients, games *all_games, char *tok, int max_players
 void reconnect(clients **array_clients, games *all_games, char *name, int fd);
 void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, int fd);
 void client_move(games **all_games, clients *array_clients, char *tok);
+void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd);
+void my_log(char *filename, char *message);
+void log_all(char *filename, int count_bytes, int count_messages, int count_connections, int count_bad_transmissions, int server_running_minutes);
+int server_running(struct timeval start, struct timeval end);
 
 //client.c
 void create_clients(clients **array_clients);
@@ -80,6 +84,7 @@ char *get_color_by_name(clients *array_clients, char *name);
 char *get_color_by_socket_ID(clients *array_clients, int socket_ID);
 char *get_state_by_name(clients *array_clients, char *name);
 void set_socket_ID(clients **array_clients, char *name, int socket_ID);
+client *get_client_by_socket_ID(clients *array_clients, int socket_ID);
 
 //conditions.c
 int check_can_kill(games **all_games, int game_ID, char *color, char *type);
