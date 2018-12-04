@@ -333,3 +333,27 @@ int king_second_move_kill(games **all_games, int game_ID, int first_position, in
 	}
 	else return 0;
 }
+
+void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type) {
+
+	if (strcmp(type, "man") == 0) {
+		char message_promote[100];
+		
+		if (strcmp(color, "white") == 0) {
+			if (dp_row == 0) {
+				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
+				sprintf(message_promote, "promote;%d;%d;\n", dp_row, dp_col);
+				send_message(curr_pl_socket_ID, message_promote, info);
+				send_message(sec_pl_socket_ID, message_promote, info);
+			}
+		}
+		else {
+			if (dp_row == 9) {
+				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
+				sprintf(message_promote, "promote;%d;%d;\n", dp_row, dp_col);
+				send_message(curr_pl_socket_ID, message_promote, info);
+				send_message(sec_pl_socket_ID, message_promote, info);
+			}
+		}
+	}
+}
