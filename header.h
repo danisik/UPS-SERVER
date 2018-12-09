@@ -71,7 +71,7 @@ int name_exists (clients *array_clients, char *name);
 void send_message(int client_socket, char *message, log_info **info);
 
 void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd);
-void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd);
+void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players);
 void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd);
 void client_move(games **all_games, clients *array_clients, log_info **info, char *tok);
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd);
@@ -100,17 +100,19 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 void send_all_no_kill(games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name);
 void send_all_kill(games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int middle_row, int middle_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
 
-int all_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color);
-int all_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color);
-int king_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color);
-int king_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color);
+int all_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
+int all_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
+int king_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
+int king_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
 
-int all_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
-int all_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
-int king_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
-int king_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
+int all_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
+int all_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
+int king_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
+int king_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
 
 void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type);
+int check_if_opponent_have_pieces(games **all_games, int game_ID, char *color);
+int check_if_can_move(games **all_games, int game_ID, int first_position, int second_position, char *color, char *type);
 
 //game.c
 void create_wanna_play(wanna_play **wanna_plays);
@@ -127,8 +129,9 @@ void remove_game(clients **clients, games **all_games, log_info **info, int game
 void process_move(games **all_games, clients *clients, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type);
 int switch_no_kill(int value, games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name);
 int switch_kill(int value, games **all_games, log_info **info, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
-int check_if_can_move(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sc_pl_name, char *color, char *type);
 game *find_game_by_name(games *all_games, char *name);
+
+void end_game(int status, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
 
 //free.c
 void free_client();
