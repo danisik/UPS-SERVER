@@ -97,8 +97,12 @@ int main (void)
 		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, (fd_set*)NULL, &client_timeout);
 
 		if (return_value < 0) {
-			printf("Select ERR\n");
-			return -1;
+			delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, "end_game_left;\n");
+			continue;
+		}
+		else if (return_value == 0) {
+			delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, "end_game_timeout;\n");
+			continue;
 		}
 
 		for (fd = 3; fd < FD_SETSIZE; fd++) {
@@ -113,7 +117,10 @@ int main (void)
 					if (int_ioctl >= 0) {	
 						if (a2read > 0) {
 							int int_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0);
-	
+							if (recv == 0) {
+								disconnect(&array_clients, &info, all_games, fd);
+								continue;
+							}
 							char *tok = strtok(cbuf, ";");
 							char *type_message = tok;
 		
@@ -132,13 +139,14 @@ int main (void)
 							else if (strcmp(type_message, "new_game_no") == 0) {
 								client_remove(&array_clients, &wanna_plays, fd);
 							}
+							else if (strcmp(type_message, "app_end") == 0) {
+							}
 							else {
-									//spatny prikaz
+								//spatny prikaz
 							}						
 						}
 						else {
-							set_state_by_socket_ID(&array_clients, fd, "disconnect");
-							//send_message(druhy klient ve hre dostal dc);
+							delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, "end_game_left;\n");
 						}
 					}
 					else {
@@ -345,6 +353,47 @@ void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set
 	close(fd);
 	FD_CLR(fd, client_socks);
 	client_remove(array_clients, wanna_plays, fd);
+}
+
+void disconnect(clients **array_clients, log_info **info, games *all_games, int fd) {
+
+	if (strcmp(get_state_by_socket_ID(*array_clients, fd), "disconnect") == 0) return;
+	set_state_by_socket_ID(array_clients, fd, "disconnect");
+
+	char *dc_client_name = get_name_by_socket_ID(*array_clients, fd);
+	char *second_client_name;
+	game *game = find_game_by_name(all_games, dc_client_name);
+	if (game == NULL) return;
+	if (strcmp(game -> name_1, dc_client_name) == 0) {
+		second_client_name = game -> name_2;
+	} 
+	else {
+		second_client_name = game -> name_1;
+	}
+	
+	send_message(get_socket_ID_by_name(*array_clients, second_client_name), "opponent_connection_lost;\n", info);
+}
+
+void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, char *message) {
+
+	char *dc_client_name = get_name_by_socket_ID(*array_clients, fd);
+	game *game = find_game_by_name(*all_games, dc_client_name);	
+	if (game == NULL) {
+		delete_connection(array_clients, wanna_plays, client_socks, fd);
+		return;
+	}
+	char *second_client_name;
+
+	if (strcmp(game -> name_1, dc_client_name) == 0) {
+		second_client_name = game -> name_2;
+	} 
+	else {
+		second_client_name = game -> name_1;
+	}
+
+	send_message(get_socket_ID_by_name(*array_clients, second_client_name), message, info);
+	remove_game(array_clients, all_games, info, game -> game_ID);
+	delete_connection(array_clients, wanna_plays, client_socks, fd);
 }
 
 //Každý program bude doplněn o zpracování statistických údajů: 

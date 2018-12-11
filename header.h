@@ -77,6 +77,8 @@ void client_move(games **all_games, clients *array_clients, log_info **info, cha
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd);
 void log_all(char *filename, log_info *info);
 void server_running(struct timeval start, struct timeval end, log_info **info);
+void disconnect(clients **array_clients, log_info **info, games *all_games, int fd);
+void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, char *message);
 
 //client.c
 void create_clients(clients **array_clients);
@@ -91,6 +93,7 @@ int get_socket_ID_by_name(clients *array_clients, char *name);
 char *get_color_by_name(clients *array_clients, char *name);
 char *get_color_by_socket_ID(clients *array_clients, int socket_ID);
 char *get_state_by_name(clients *array_clients, char *name);
+char *get_state_by_socket_ID(clients *array_clients, int socket_ID);
 void set_socket_ID(clients **array_clients, char *name, int socket_ID);
 client *get_client_by_socket_ID(clients *array_clients, int socket_ID);
 

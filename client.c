@@ -158,6 +158,19 @@ char *get_state_by_name(clients *array_clients, char *name) {
 	return NULL;
 }
 
+char *get_state_by_socket_ID(clients *array_clients, int socket_ID) {
+	int i;
+	int count = array_clients -> clients_count;
+	int socket;	
+	for (i = 0; i < count; i++) {
+		socket = array_clients -> clients[i] -> socket_ID;
+		if (socket == socket_ID) {
+			return array_clients -> clients[i] -> state;
+		}
+	}
+	return NULL;
+}
+
 void set_socket_ID(clients **array_clients, char *name, int socket_ID) {
 	int i;
 	int count = (*array_clients) -> clients_count;
