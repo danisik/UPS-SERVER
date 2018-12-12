@@ -20,6 +20,7 @@ int check_can_kill(games **all_games, int game_ID, char *color, char *type) {
 					}
 				}
 			}
+			
 		}
 	}
 }
@@ -39,7 +40,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 				if (strcmp(fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) != 0) {
 					if((cp_row - second_position) >= 0 && (cp_col - second_position) >= 0) {
 						if (fields -> all_fields[cp_row - second_position][cp_col - second_position] -> piece == NULL) {	
-							printf("white killing left top");
 							return 1;
 						}
 					}
@@ -51,7 +51,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 				if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) {
 					if((cp_row - second_position) >= 0 && (cp_col + second_position) <= 9) {	
 						if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {			
-							printf("white killing right top");
 							return 1;
 						}
 					}
@@ -65,7 +64,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 					if (strcmp(fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) {
 						if((cp_row + second_position) <= 9 && (cp_col - second_position) >= 0) {	
 							if (fields -> all_fields[cp_row + second_position][cp_col - second_position] -> piece == NULL) {
-								printf("white killing left bot");
 								return 1;
 							}
 						}
@@ -77,7 +75,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 					if (strcmp(fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) {
 						if((cp_row + second_position) <= 9 && (cp_col + second_position) <= 9) {	
 							if (fields -> all_fields[cp_row + second_position][cp_col + second_position] -> piece == NULL) {
-								printf("white killing right bot");
 								return 1;
 							}
 						}
@@ -92,7 +89,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 				if (strcmp(fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece -> color, color) != 0) {
 					if((cp_row + second_position) <= 9 && (cp_col + second_position) <= 9) {
 						if (fields -> all_fields[cp_row + second_position][cp_col + second_position] -> piece == NULL) {	
-							printf("black killing right bot");
 							return 1;
 						}
 					}
@@ -104,7 +100,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 				if (strcmp(fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece -> color, color) != 0) {
 					if((cp_row + second_position) <= 9 && (cp_col - second_position) >= 0) {	
 						if (fields -> all_fields[cp_row + second_position][cp_col - second_position] -> piece == NULL) {				
-							printf("black killing left bot");
 							return 1;
 						}
 					}
@@ -118,7 +113,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 					if (strcmp(fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece -> color, color) != 0) {
 						if((cp_row - second_position) >= 0 && (cp_col + second_position) <= 9) {	
 							if (fields -> all_fields[cp_row - second_position][cp_col + second_position] -> piece == NULL) {
-								printf("black killing right top");
 								return 1;
 							}
 						}
@@ -130,7 +124,6 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 					if (strcmp(fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece -> color, color) != 0) {
 						if((cp_row - second_position) >= 0 && (cp_col - second_position) >= 0) {	
 							if (fields -> all_fields[cp_row - second_position][cp_col - second_position] -> piece == NULL) {
-								printf("black killing left top");
 								return 1;
 							}
 						}
@@ -143,15 +136,22 @@ int check_if_can_kill(fields *fields, int cp_row, int cp_col, char *color, char 
 }
 
 //
-void send_all_no_kill(games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
+void send_all_no_kill(clients **all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	char correct_message[100];
 	sprintf(correct_message, "correct_move;2;%d;%d;%d;%d;\n", cp_row, cp_col, dp_row, dp_col);
 
 	send_message(curr_pl_socket_ID, correct_message, info);  		
 	send_message(sec_pl_socket_ID, correct_message, info);
 
+	client *client_1 = get_client_by_socket_ID(*all_clients, curr_pl_socket_ID);
+	client *client_2 = get_client_by_socket_ID(*all_clients, sec_pl_socket_ID);
+
+	set_state(&client_1, 4);
+	set_state(&client_2, 3);
+
 	send_message(curr_pl_socket_ID, "end_move;\n", info);
 	send_message(sec_pl_socket_ID, "play_next_player;\n", info);
+
 	(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
 
 	(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
@@ -159,17 +159,22 @@ void send_all_no_kill(games **all_games, log_info **info, int game_ID, int cp_ro
 }
 
 //
-void send_all_kill(games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int middle_row, int middle_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
+void send_all_kill(clients **all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int middle_row, int middle_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
 	char correct_message[100];
 	sprintf(correct_message, "correct_move;3;%d;%d;%d;%d;%d;%d;\n", cp_row, cp_col, middle_row, middle_col, dp_row, dp_col);
 
 	send_message(curr_pl_socket_ID, correct_message, info);  					
 	send_message(sec_pl_socket_ID, correct_message, info);
-	if (check_if_can_kill((*all_games) -> games[game_ID] -> fields, cp_row, cp_col, color, type) != 0) {
-		send_message(curr_pl_socket_ID, "end_move;\n", info);
-		send_message(sec_pl_socket_ID, "play_next_player;\n", info);
-		(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
-	}
+
+	client *client_1 = get_client_by_socket_ID(*all_clients, curr_pl_socket_ID);
+	client *client_2 = get_client_by_socket_ID(*all_clients, sec_pl_socket_ID);
+
+	set_state(&client_1, 4);
+	set_state(&client_2, 3);
+
+	send_message(curr_pl_socket_ID, "end_move;\n", info);
+	send_message(sec_pl_socket_ID, "play_next_player;\n", info);
+	(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
 					
 	(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 	(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
@@ -181,7 +186,6 @@ void send_all_kill(games **all_games, log_info **info, int game_ID, int cp_row, 
 	else strcpy(opponent_color, "white");
 	
 	int val = check_if_opponent_have_pieces(all_games, game_ID, opponent_color);
-	printf("val %d\n", val);
 	if (val == 0) {
 		end_game(2, curr_pl_socket_ID, sec_pl_socket_ID, info);
 	}
@@ -382,7 +386,7 @@ void check_if_can_promote(games **all_games, log_info **info, int game_ID, int d
 		
 		if (strcmp(color, "white") == 0) {
 			if (dp_row == 0) {
-				//(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
+				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
 				sprintf(message_promote, "promote;%d;%d;\n", dp_row, dp_col);
 				send_message(curr_pl_socket_ID, message_promote, info);
 				send_message(sec_pl_socket_ID, message_promote, info);
@@ -390,7 +394,7 @@ void check_if_can_promote(games **all_games, log_info **info, int game_ID, int d
 		}
 		else {
 			if (dp_row == 9) {
-				//(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
+				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";
 				sprintf(message_promote, "promote;%d;%d;\n", dp_row, dp_col);
 				send_message(curr_pl_socket_ID, message_promote, info);
 				send_message(sec_pl_socket_ID, message_promote, info);
@@ -405,7 +409,6 @@ int check_if_opponent_have_pieces(games **all_games, int game_ID, char *color) {
 		for (j = 0; j < (*all_games) -> games[game_ID] -> fields -> size; j++) {
 			if((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece != NULL) {
 				if(strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0) {
-					printf("cunt piece: %d %d\n", i, j);
 					return 1;
 				}			
 			}

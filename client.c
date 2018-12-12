@@ -19,7 +19,7 @@ void create_client(client **cl, char *name, int socket_ID) {
 	(*cl) -> name = calloc(1, strlen(name) * sizeof(char));
 	strcpy((*cl) -> name, name);
 	(*cl) -> socket_ID = socket_ID;
-	strcpy((*cl) -> state, "not_playing");
+	(*cl) -> state = 0;
 }
 
 void add_client(clients **array_clients, char *name, int socket_ID) {
@@ -54,141 +54,10 @@ void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_
 	}
 }
 
-void set_color(clients **array_clients, int socket_ID, char *color) {
-	int i;
-	int count = (*array_clients) -> clients_count;
-	int socket;	
-	for (i = 0; i < count; i++) {
-		socket = (*array_clients) -> clients[i] -> socket_ID;
-		if (socket == socket_ID) {
-			(*array_clients) -> clients[i] -> color = calloc(1, 5*sizeof(char));
-			strcpy((*array_clients) -> clients[i] -> color, color);
-			return;
-		}
-	}
-}
-
-void set_state_by_name(clients **array_clients, char *name, char *state) {
-	int i;
-	int count = (*array_clients) -> clients_count;
-	char *client_name;
-	for (i = 0; i < count; i++) {
-		client_name = (*array_clients) -> clients[i] -> name;
-		if (strcmp(client_name, name) == 0) {
-			strcpy((*array_clients) -> clients[i] -> state, state);
-			return;
-		}
-	}
-}
-
-void set_state_by_socket_ID(clients **array_clients, int socket_ID, char *state) {
-	int i;
-	int count = (*array_clients) -> clients_count;
-	int socket;
-	for (i = 0; i < count; i++) {
-		socket = (*array_clients) -> clients[i] -> socket_ID;
-		if (socket == socket_ID) {
-			strcpy((*array_clients) -> clients[i] -> state, state);
-			return;
-		}
-	}
-}
-
-char *get_name_by_socket_ID(clients *array_clients, int socket_ID) {
-	int i;
-	int count = array_clients -> clients_count;
-	int socket;	
-	for (i = 0; i < count; i++) {
-		socket = array_clients -> clients[i] -> socket_ID;
-		if (socket == socket_ID) {
-			return array_clients -> clients[i] -> name;
-		}
-	}
-	return NULL;
-}
-
-int get_socket_ID_by_name(clients *array_clients, char *name) {
-	int i;
-	int count = array_clients -> clients_count;
-	char *client_name;	
-	for (i = 0; i < count; i++) {
-		client_name = array_clients -> clients[i] -> name;
-		if (strcmp(name, client_name) == 0) {
-			return array_clients -> clients[i] -> socket_ID;
-		}
-	}
-}
-
-char *get_color_by_name(clients *array_clients, char *name) {
-	int i;
-	int count = array_clients -> clients_count;
-	char *client_name;	
-	for (i = 0; i < count; i++) {
-		client_name = array_clients -> clients[i] -> name;
-		if (strcmp(name, client_name) == 0) {
-			return array_clients -> clients[i] -> color;
-		}
-	}
-	return NULL;
-}
-
-char *get_color_by_socket_ID(clients *array_clients, int socket_ID) {
-	int i;
-	int count = array_clients -> clients_count;
-	int socket;	
-	for (i = 0; i < count; i++) {
-		socket = array_clients -> clients[i] -> socket_ID;
-		if (socket == socket_ID) {
-			return array_clients -> clients[i] -> color;
-		}
-	}
-	return NULL;
-}
-
-char *get_state_by_name(clients *array_clients, char *name) {
-	int i;
-	int count = array_clients -> clients_count;
-	char *client_name;	
-	for (i = 0; i < count; i++) {
-		client_name = array_clients -> clients[i] -> name;
-		if (strcmp(name, client_name) == 0) {
-			return array_clients -> clients[i] -> state;
-		}
-	}
-	return NULL;
-}
-
-char *get_state_by_socket_ID(clients *array_clients, int socket_ID) {
-	int i;
-	int count = array_clients -> clients_count;
-	int socket;	
-	for (i = 0; i < count; i++) {
-		socket = array_clients -> clients[i] -> socket_ID;
-		if (socket == socket_ID) {
-			return array_clients -> clients[i] -> state;
-		}
-	}
-	return NULL;
-}
-
-void set_socket_ID(clients **array_clients, char *name, int socket_ID) {
-	int i;
-	int count = (*array_clients) -> clients_count;
-	char *client_name;	
-	for (i = 0; i < count; i++) {
-		client_name = (*array_clients) -> clients[i] -> name;
-		if (strcmp(name, client_name) == 0) {
-			(*array_clients) -> clients[i] -> socket_ID = socket_ID;
-			return;
-		}
-	}
-}
-
 client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
 	int i;
 	int count = array_clients -> clients_count;
 	int socket;	
-	printf("%d", socket);
 	for (i = 0; i < count; i++) {
 		socket = array_clients -> clients[i] -> socket_ID;
 		if (socket == socket_ID) {
@@ -196,4 +65,25 @@ client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
 		}
 	}
 	return NULL;
+}
+
+client *get_client_by_name(clients *array_clients, char *name) {
+	int i;
+	int count = array_clients -> clients_count;	
+	char *nam;
+	for (i = 0; i < count; i++) {
+		nam = array_clients -> clients[i] -> name;
+		if (strcmp(nam, name) == 0) {
+			return array_clients -> clients[i];
+		}
+	}
+	return NULL;
+}
+
+void set_state(client **client, int state) {
+	(*client) -> state = state;
+}
+
+void set_color(client **client, char *color) {
+	strcpy((*client) -> color, color);
 }
