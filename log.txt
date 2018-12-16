@@ -1,5 +1,5 @@
-Bytes sent: 11
-Messages sent: 1
-Clients connected: 3
+Bytes sent: 155
+Messages sent: 9
+Clients connected: 6
 Unused bytes sent: 0
 Server ran for 0 minutes
