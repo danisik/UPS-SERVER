@@ -115,29 +115,37 @@ void add_game(games **all_games, char *name_1, char *name_2, char *now_playing) 
 	(*all_games) -> games[((*all_games) -> games_count) - 1] -> game_ID = ((*all_games) -> games_count) - 1;
 }
 
-void remove_game(clients **clients, games **all_games, log_info **info, int game_ID, client **client) {
+void remove_game(clients **cls, games **all_games, log_info **info, int game_ID) {
 	int i;
 	int count = (*all_games) -> games_count;
 	int index;
+	int update_game_ID = 0;
 	for (i = 0; i < count; i++) {
-		if (i == game_ID) {
+		if (i == game_ID) {			
 			(*all_games) -> games_count--;			
 			if (i < (count - 1)) {
 				free((*all_games) -> games[i]);
-				(*all_games) -> games[i] = (*all_games) -> games[((*all_games) -> games_count)];								
+				(*all_games) -> games[i] = (*all_games) -> games[((*all_games) -> games_count)];		
+				update_game_ID = 1;
 			}
+			
 			(*all_games) -> games[((*all_games) -> games_count)] = NULL;			
 			(*all_games) -> games = realloc((*all_games) -> games, (*all_games) -> games_count * sizeof(game));
-			index = i;			
-			(*all_games) -> games[((*all_games) -> games_count) - 1] -> game_ID = index;
+			if (((*all_games) -> games_count) > 0) {
+				index = i;			
+				(*all_games) -> games[((*all_games) -> games_count) - 1] -> game_ID = index;
+			}
 			break;
 		}
 	}
-	char *message;
-	sprintf(message, "update_game_ID;%d;\n", index);
 	
-	send_message(get_client_by_name(*clients, (*all_games) -> games[index] -> name_1) -> socket_ID, message, info);
-	send_message(get_client_by_name(*clients, (*all_games) -> games[index] -> name_2) -> socket_ID, message, info);
+	if (update_game_ID == 1) {
+		char *message;
+		sprintf(message, "update_game_ID;%d;\n", index);
+	
+		send_message(get_client_by_name(*cls, (*all_games) -> games[index] -> name_1) -> socket_ID, message, info);
+		send_message(get_client_by_name(*cls, (*all_games) -> games[index] -> name_2) -> socket_ID, message, info);
+	}
 }
 
 void process_move(games **all_games, clients *clients, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
@@ -216,13 +224,13 @@ void process_move(games **all_games, clients *clients, log_info **info, int game
 			int first_move_kill = all_first_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, color);
 
 			int if_return = switch_kill(&clients, first_move_kill, all_games, info, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, 					client_2 -> name, color, type);
-			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);			
+			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);			
 			if (if_return == 1) return;
 
 			int second_move_kill = all_second_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, color);
 			
 			if_return = switch_kill(&clients, second_move_kill, all_games, info, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, client_2 -> name, color, type);
-			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);
+			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);
 			if (if_return == 1) return;
 			
 		}
@@ -231,13 +239,13 @@ void process_move(games **all_games, clients *clients, log_info **info, int game
 				int first_move_kill = king_first_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, color);
 				
 				int if_return = switch_kill(&clients, first_move_kill, all_games, info, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, 						client_2 -> name, color, type);
-				check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);
+				check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);
 				if (if_return == 1) return;
 
 				int second_move_kill = king_second_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, color);
 
 				if_return = switch_kill(&clients ,second_move_kill, all_games, info, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, client_2 -> name, color, type);
-				check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);		
+				check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);		
 				if (if_return == 1) return;
 
 				send_message(client_1 -> socket_ID, "wrong_move;9;\n", info);
@@ -257,26 +265,26 @@ void process_move(games **all_games, clients *clients, log_info **info, int game
 		int first_move_no_kill = all_first_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, NULL);
 			
 		int if_return = switch_no_kill(&clients, first_move_no_kill, all_games, info, game_ID, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, client_2 -> name);
-		check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);		
+		check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);		
 		if (if_return == 1) return;
 
 		int second_move_no_kill = all_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, NULL);
 				
 		if_return = switch_no_kill(&clients, second_move_no_kill, all_games, info, game_ID, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, client_2 -> name);
-		check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);
+		check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);
 		if (if_return == 1) return;
 
 		if (strcmp(type, "king") == 0) {
 			first_move_no_kill = king_first_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, NULL);
 			
 			if_return = switch_no_kill(&clients, first_move_no_kill, all_games, info, game_ID, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, client_2 -> name);
-			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);			
+			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);			
 			if (if_return == 1) return;
 
 			second_move_no_kill = king_second_move_no_kill(all_games, game_ID, first_position, cp_row, cp_col, dp_row, dp_col, NULL);
 			
 			if_return = switch_no_kill(&clients, second_move_no_kill, all_games, info, game_ID, cp_row, cp_col, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, client_2 -> name);
-			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type);		
+			check_if_can_promote(all_games, info, game_ID, dp_row, dp_col, client_1 -> socket_ID, client_2 -> socket_ID, color, type, cp_row, cp_col);		
 			if (if_return == 1) return;
 
 			send_message(client_1 -> socket_ID, "wrong_move;4;\n", info);

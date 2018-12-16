@@ -383,10 +383,15 @@ int king_second_move_kill(games **all_games, int game_ID, int first_position, in
 	else return 0;
 }
 
-void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type) {
+void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type, int cp_row, int cp_col) {
 	if (strcmp(type, "man") == 0) {
 		char message_promote[100];
-		
+		printf("%d %d\n", dp_row, dp_col);
+		if (!((*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece == NULL)) {
+			if ((*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type == NULL) return;
+		}
+		else return;
+
 		if (strcmp(color, "white") == 0) {
 			if (dp_row == 0) {
 				(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type = "king";

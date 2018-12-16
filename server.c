@@ -90,10 +90,10 @@ int main(int argc, char *argv[])
 	}
 	FD_ZERO(&client_socks);
 	FD_SET(server_socket, &client_socks);
+	signal(SIGINT, sigint_handler);	
 	while(1) {
 		tests = client_socks;
 		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, (fd_set*)NULL, &client_timeout);
-		signal(SIGINT, sigint_handler);	
 		for (fd = 3; fd < FD_SETSIZE; fd++) {
 			if (FD_ISSET(fd, &tests)) {
 				if (fd == server_socket) {
@@ -114,6 +114,8 @@ int main(int argc, char *argv[])
 							if (return_value == 0) {
 								delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 0, &cl);
 							}
+
+							
 							char *tok = strtok(cbuf, ";");
 							char *type_message = tok;
 							if (strcmp(type_message, "login") == 0) {
@@ -425,9 +427,9 @@ void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_so
 			printf("Game with id %d removed due to client left\n", gm -> game_ID);
 			break;
 	}	
-	send_message(get_client_by_name(*array_clients, second_client_name) -> socket_ID, message, info);
+	send_message(sec_cl -> socket_ID, message, info);
+	remove_game(array_clients, all_games, info, gm -> game_ID);
 	delete_connection(array_clients, wanna_plays, client_socks, fd);
-	//remove_game(array_clients, all_games, info, gm -> game_ID, cl);
 
 	return;
 }

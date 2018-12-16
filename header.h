@@ -115,7 +115,7 @@ int all_second_move_kill(games **all_games, int game_ID, int first_position, int
 int king_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
 int king_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color);
 
-void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type);
+void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type, int cp_row, int cp_col);
 int check_if_opponent_have_pieces(games **all_games, int game_ID, char *color);
 int check_if_can_move(games **all_games, int game_ID, int first_position, int second_position, char *color, char *type);
 
@@ -129,7 +129,7 @@ void inicialize_pieces(fields **fields, char *color, int row, int col);
 void create_fields(game **gm);
 void create_game(game **gm, char *name_1, char *name_2, char *now_playing);
 void add_game(games **all_games, char *name_1, char *name_2, char *now_playing);
-void remove_game(clients **clients, games **all_games, log_info **info, int game_ID, client **client);
+void remove_game(clients **cls, games **all_games, log_info **info, int game_ID);
 
 void process_move(games **all_games, clients *clients, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type);
 int switch_no_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name);
