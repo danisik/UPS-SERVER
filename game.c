@@ -19,7 +19,7 @@ void add_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 	printf("socket_ID %d want play a game\n", socket_ID);
 	(*wanna_plays) -> socket_IDs = realloc((*wanna_plays) -> socket_IDs, (*wanna_plays) -> size * sizeof(int));
 	(*wanna_plays) -> socket_IDs[((*wanna_plays) -> size) - 1] = socket_ID;
-	printf("%d client/s wanna play a game:\n", (*wanna_plays) -> size);
+	printf("%d client/s wanna play a game\n", (*wanna_plays) -> size);
 }
 
 void remove_wanna_play(wanna_play **wanna_plays, int socket_ID) {
@@ -338,6 +338,7 @@ game *find_game_by_name(games *all_games, char *name) {
 			return all_games -> games[i];
 		}  
 	}
+	return NULL;
 }
 
 //0 - draw
@@ -358,4 +359,5 @@ void end_game(int status, int current_player_socket_ID, int second_player_socket
 			send_message(second_player_socket_ID, "end_game;lose;\n", info);
 			break;
 	}
+	return;
 }

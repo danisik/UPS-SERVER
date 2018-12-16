@@ -23,6 +23,7 @@ int check_can_kill(games **all_games, int game_ID, char *color, char *type) {
 			
 		}
 	}
+	return 0;
 }
 
 //return: 0 - can't kill piece
@@ -156,6 +157,7 @@ void send_all_no_kill(clients **all_clients, games **all_games, log_info **info,
 
 	(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 	(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
+	return;
 }
 
 //
@@ -189,6 +191,7 @@ void send_all_kill(clients **all_clients, games **all_games, log_info **info, in
 	if (val == 0) {
 		end_game(2, curr_pl_socket_ID, sec_pl_socket_ID, info);
 	}
+	return;
 }
 
 //0 - nothing

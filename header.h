@@ -86,7 +86,8 @@ void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set
 void log_all(char *filename, log_info *info);
 void server_running(struct timeval start, struct timeval end, log_info **info);
 void disconnect(clients **array_clients, log_info **info, games *all_games, int fd, client **client);
-void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, char *message, client **client);
+void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID, client **cl);
+void game_info();
 
 //client.c
 void create_clients(clients **array_clients);
@@ -136,13 +137,4 @@ int switch_kill(clients **all_clients, int value, games **all_games, log_info **
 game *find_game_by_name(games *all_games, char *name);
 
 void end_game(int status, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
-
-//free.c
-void free_client();
-void free_clients();
-void free_field();
-void free_fields();
-void free_wanna_play();
-void free_game();
-void free_games();
 

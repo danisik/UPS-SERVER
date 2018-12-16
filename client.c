@@ -12,6 +12,7 @@ void create_clients(clients **array_clients) {
 	(*array_clients) = calloc(1, sizeof(clients));
 	(*array_clients) -> clients_count = 0;
 	(*array_clients) -> clients = calloc(1, sizeof(client));
+	return;
 }
 
 void create_client(client **cl, char *name, int socket_ID) {
@@ -20,6 +21,7 @@ void create_client(client **cl, char *name, int socket_ID) {
 	strcpy((*cl) -> name, name);
 	(*cl) -> socket_ID = socket_ID;
 	(*cl) -> state = 0;
+	return;
 }
 
 void add_client(clients **array_clients, char *name, int socket_ID) {
@@ -30,6 +32,7 @@ void add_client(clients **array_clients, char *name, int socket_ID) {
 	client *client = NULL;
 	create_client(&client, name, socket_ID);
 	(*array_clients) -> clients[((*array_clients) -> clients_count) - 1] = client;
+	return;
 }
 	
 void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_ID) {
@@ -52,6 +55,7 @@ void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_
 			return;
 		}
 	}
+	return;
 }
 
 client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
@@ -82,8 +86,10 @@ client *get_client_by_name(clients *array_clients, char *name) {
 
 void set_state(client **client, int state) {
 	(*client) -> state = state;
+	return;
 }
 
 void set_color(client **client, char *color) {
 	strcpy((*client) -> color, color);
+	return;
 }
