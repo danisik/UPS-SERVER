@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
 							}
 
 							
+
 							char *tok = strtok(cbuf, ";");
 							char *type_message = tok;
 							if (strcmp(type_message, "login") == 0) {
@@ -404,6 +405,7 @@ void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_so
 	}
 	if (gm == NULL) {
 		printf("game null\n");
+		delete_connection(array_clients, wanna_plays, client_socks, fd);
 		return;
 	}
 	printf("Game id %d\n", gm -> game_ID);
