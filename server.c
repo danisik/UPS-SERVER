@@ -9,6 +9,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <signal.h>
+#include <arpa/inet.h>
 #include "header.h"
 
 void sigint_handler(int sig);
@@ -19,11 +20,19 @@ struct timeval server_start;
 struct timeval server_end;
 
 int main(int argc, char *argv[])
-{
+{	
 	int port = 10000;
+	char address = INADDR_ANY;
 	game_info();
-	if (argc == 2) {
-		if (strcmp(argv[0], "-port") == 0 || strcmp(argv[0], "-p") == 0) port = atoi(argv[1]);
+	switch(argc) {
+		case 2:
+			if (strcmp(argv[0], "-address") == 0 || strcmp(argv[0], "-a") == 0) address = inet_addr(argv[1]);
+			else if (strcmp(argv[0], "-port") == 0 || strcmp(argv[0], "-p") == 0) port = atoi(argv[1]);
+			break;
+		case 4:
+			if (strcmp(argv[0], "-address") == 0 || strcmp(argv[0], "-a") == 0) address = inet_addr(argv[1]);
+			if (strcmp(argv[2], "-port") == 0 || strcmp(argv[2], "-p") == 0) port = atoi(argv[3]);
+			break;
 	}
 	int max_players = 32;
 
@@ -93,6 +102,7 @@ int main(int argc, char *argv[])
 	signal(SIGINT, sigint_handler);	
 	while(1) {
 		tests = client_socks;
+		client_timeout.tv_sec = 300;
 		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, (fd_set*)NULL, &client_timeout);
 		for (fd = 3; fd < FD_SETSIZE; fd++) {
 			if (FD_ISSET(fd, &tests)) {
@@ -107,14 +117,18 @@ int main(int argc, char *argv[])
 						if (a2read > 0) {
 							client *cl = get_client_by_socket_ID(array_clients, fd);
 							int int_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0);	
-							if (recv == 0) {
+							if (recv <= 0) {
 								disconnect(&array_clients, &info, all_games, fd, &cl);
 								continue;
 							}
 							if (return_value == 0) {
 								delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 0, &cl);
 							}
-
+				
+							int contains_semicolon = -1;
+							contains_semicolon = check_if_contains_semicolon(cbuf);
+							
+							if (contains_semicolon == 0) continue;
 							
 
 							char *tok = strtok(cbuf, ";");
@@ -163,6 +177,10 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+
+/*
+ * method called when server closing
+ */
 void sigint_handler(int sig) {
 	gettimeofday(&server_end, NULL);
 	server_running(server_start, server_end, &info);
@@ -173,6 +191,12 @@ void sigint_handler(int sig) {
 
 //return: 0 - not contains name
 //	  1 - contains name
+
+/*
+ * Check if name exists in array of clients
+ * @param array_clients - array of logged clients
+ * @param name - selected name of actually loging client
+ */
 int name_exists (clients *array_clients, char *name) {
 	int i;
 	for (i = 0; i < array_clients -> clients_count; i++) {
@@ -183,6 +207,12 @@ int name_exists (clients *array_clients, char *name) {
 	return 0;
 }
 
+/*
+ * Process login for client
+ * @param client_socket - socket of logged client
+ * @param message - message to send to client
+ * @param info - structures to save log info
+ */
 void send_message(int client_socket, char *message, log_info **info) {	
 	printf("Message: %s\n", message);
 	send(client_socket, message, strlen(message) * sizeof(char), 0);
@@ -192,7 +222,16 @@ void send_message(int client_socket, char *message, log_info **info) {
 	return;
 }
 
-
+/*
+ * Process login for client
+ * @param array_clients - array of logged clients
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param tok - string send by client containing login info
+ * @param max_players - number saying how many client can be logged at one time
+ * @param fd - client socket
+ * @param cl - actual client
+ */
 void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd, client **client) {
 	tok = strtok(NULL, ";");
 	char *name = tok;
@@ -227,6 +266,17 @@ void login(clients **array_clients, games *all_games, log_info **info, char *tok
 	return;
 }
 	
+/*
+ * Client reconnected, sending board of game
+ * @param array_clients - array of logged clients
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param name - name of client
+ * @param fd - client socket
+ * @param tok - string send by client containing login info
+ * @param max_players - number saying how many client can be logged at one time
+ * @param cl - actual client
+ */
 void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **client) {
 	(*client) -> socket_ID = fd;
 								
@@ -279,6 +329,16 @@ void reconnect(clients **array_clients, games *all_games, log_info **info, char 
 	return;
 }
 
+
+/*
+ * Client want play a game
+ * @param array_clients - array of logged clients
+ * @param wanna_play - array of clients who wants to play a game
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param fd - client socket
+ * @param cl - actual client
+ */
 void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd, client **cl) {
 	client *second_client = NULL;
 	add_wanna_play(wanna_plays, fd);
@@ -335,6 +395,14 @@ void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, 
 	return;
 }
 
+
+/*
+ * Move method, process move client just realized in client
+ * @param all_games - array of all games
+ * @param array_clients - array of logged clients
+ * @param info - structures to save log info
+ * @param tok - text with info about processed move in client
+ */
 void client_move(games **all_games, clients *array_clients, log_info **info, char *tok) {
 	int i = 0;
 	char *array[10];
@@ -360,6 +428,14 @@ void client_move(games **all_games, clients *array_clients, log_info **info, cha
 	return;
 }
 
+
+/*
+ * Delete connection of client
+ * @param array_clients - array of logged clients
+ * @param wanna_play - array of clients who wants to play a game
+ * @param client_socks - array of client sockets
+ * @param fd - client socket
+ */
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd) {
 	close(fd);
 	FD_CLR(fd, client_socks);
@@ -367,6 +443,14 @@ void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set
 	return;
 }
 
+/*
+ * Disconnect method, when client disconnect but not timeout-ed
+ * @param array_clients - array of logged clients
+ * @param info - structures to save log info
+ * @param all_games - array of all games
+ * @param fd - client socket
+ * @param cl - actual client
+ */
 void disconnect(clients **array_clients, log_info **info, games *all_games, int fd, client **client) {
 
 	if (client == NULL) return;
@@ -387,6 +471,17 @@ void disconnect(clients **array_clients, log_info **info, games *all_games, int 
 	return;
 }
 
+/*
+ * Delete method, when client got timeout or left (in game/not in game)
+ * @param array_clients - array of logged clients
+ * @param wanna_play - array of clients who wants to play a game
+ * @param client_socks - array of client sockets
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param fd - client socket
+ * @param err_ID - error ID
+ * @param cl - actual client
+ */
 void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID, client **cl) {	
 	if ((*cl) == NULL) {
 		return;
@@ -450,6 +545,12 @@ void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_so
 //	4.počet bitů, které se přenesli a nevyužili jsme je
 //	5.nazačátku si uložit čas, při ukončení čas, z toho zjistit jak dlouho běžel server
 
+
+/*
+ * Log info into file
+ * @param filename - name of file
+ * @param info - structures to save log info
+ */
 void log_all(char *filename, log_info *info) {
 
 	char message_count_bytes[100];
@@ -481,12 +582,41 @@ void log_all(char *filename, log_info *info) {
 	return;
 }
 
+
+/*
+ * Calculate in minutes, how long server ran (in minutes)
+ * @param start - start time of server
+ * @param end - end time of server
+ * @param info - structures to save log info
+ */
 void server_running(struct timeval start, struct timeval end, log_info **info) {
 	(*info) -> server_running_minutes = (end.tv_sec - start.tv_sec) / 60;
 	return;
 }
 
+
+/*
+ * Print info into console how to write parameters for server
+ */
 void game_info(){
 	printf("Info about draughts\n");
-	printf("-port || -p [number] : set listening port (1024-65535), default 10000\n\n");
+	printf("-address || -a [IPv4] : set listening address (valid IPv4), default INADDR_ANY\n");
+	printf("-port || -p [number] : set listening port (1024-65535), default 10000\n");
+	printf("Example: ./server -a 127.0.0.1 -p 10000\n\n");
+}
+
+
+/*
+ * Check if input string contains semicolon between index 1 - 20
+ * @param cbuf - input string to be checked
+ */
+int check_if_contains_semicolon(char *cbuf) {
+	char *e;
+	int index;
+	printf("OK\n");
+	e = strchr(cbuf, ';');
+	if (e == NULL) return 0;
+	index = (int)(e - cbuf);
+	if (index > 20 || index <= 0) return 0;
+	else return 1;
 }

@@ -8,6 +8,10 @@
 #include <sys/ioctl.h>
 #include "header.h"
 
+/*
+ * Create array of clients
+ * @param array_clients - array of logged clients
+ */
 void create_clients(clients **array_clients) {
 	(*array_clients) = calloc(1, sizeof(clients));
 	(*array_clients) -> clients_count = 0;
@@ -15,6 +19,12 @@ void create_clients(clients **array_clients) {
 	return;
 }
 
+/*
+ * Create single client
+ * @param cl - logging client
+ * @param name - selected name of logging client
+ * @param socket_ID - socket ID of logging client
+ */
 void create_client(client **cl, char *name, int socket_ID) {
 	(*cl) = calloc(1, sizeof(client));
 	(*cl) -> name = calloc(1, strlen(name) * sizeof(char));
@@ -24,6 +34,13 @@ void create_client(client **cl, char *name, int socket_ID) {
 	return;
 }
 
+
+/*
+ * Adding client into array of clients
+ * @param array_clients - array of logged clients
+ * @param name - selected name of logging client
+ * @param socket_ID - socket ID of logging client
+ */
 void add_client(clients **array_clients, char *name, int socket_ID) {
 	(*array_clients) -> clients_count++;
 
@@ -34,7 +51,13 @@ void add_client(clients **array_clients, char *name, int socket_ID) {
 	(*array_clients) -> clients[((*array_clients) -> clients_count) - 1] = client;
 	return;
 }
-	
+
+/*
+ * Removing client from array of clients
+ * @param array_clients - array of logged clients
+ * @param wanna_play - array of clients who wants to play a game
+ * @param socket_ID - socket ID of logging client
+ */	
 void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_ID) {
 	int i;
 	int count = (*array_clients) -> clients_count;
@@ -58,6 +81,11 @@ void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_
 	return;
 }
 
+/*
+ * Return client based on sent socket_ID
+ * @param array_clients - array of logged clients
+ * @param socket_ID - socket ID of logging client
+ */	
 client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
 	int i;
 	int count = array_clients -> clients_count;
@@ -71,6 +99,11 @@ client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
 	return NULL;
 }
 
+/*
+ * Return client based on set name
+ * @param array_clients - array of logged clients
+ * @param name - name of client
+ */	
 client *get_client_by_name(clients *array_clients, char *name) {
 	int i;
 	int count = array_clients -> clients_count;	
@@ -84,11 +117,23 @@ client *get_client_by_name(clients *array_clients, char *name) {
 	return NULL;
 }
 
+
+/*
+ * Set state of client
+ * @param client - client
+ * @param state - state which client must be
+ */	
 void set_state(client **client, int state) {
 	(*client) -> state = state;
 	return;
 }
 
+
+/*
+ * Set color of client
+ * @param client - client
+ * @param color - color of clients assigned by server
+ */	
 void set_color(client **client, char *color) {
 	strcpy((*client) -> color, color);
 	return;
