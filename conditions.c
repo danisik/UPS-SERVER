@@ -171,13 +171,15 @@ void send_all_kill(clients **all_clients, games **all_games, log_info **info, in
 	client *client_1 = get_client_by_socket_ID(*all_clients, curr_pl_socket_ID);
 	client *client_2 = get_client_by_socket_ID(*all_clients, sec_pl_socket_ID);
 
-	set_state(&client_1, 4);
-	set_state(&client_2, 3);
+	int can_kill_next = check_can_kill(all_games, game_ID, color, type);
+	if(can_kill_next == 0) {
+		set_state(&client_1, 4);
+		set_state(&client_2, 3);
+		send_message(curr_pl_socket_ID, "end_move;\n", info);
+		send_message(sec_pl_socket_ID, "play_next_player;\n", info);
+		(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
+	}				
 
-	send_message(curr_pl_socket_ID, "end_move;\n", info);
-	send_message(sec_pl_socket_ID, "play_next_player;\n", info);
-	(*all_games) -> games[game_ID] -> now_playing = sec_pl_name;
-					
 	(*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece = (*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece;
 	(*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece = NULL;
 	(*all_games) -> games[game_ID] -> fields -> all_fields[middle_row][middle_col] -> piece = NULL;
@@ -189,7 +191,7 @@ void send_all_kill(clients **all_clients, games **all_games, log_info **info, in
 	
 	int val = check_if_opponent_have_pieces(all_games, game_ID, opponent_color);
 	if (val == 0) {
-		end_game(2, curr_pl_socket_ID, sec_pl_socket_ID, info);
+		end_game(1, 0, curr_pl_socket_ID, sec_pl_socket_ID, info);
 	}
 	return;
 }
@@ -199,8 +201,12 @@ void send_all_kill(clients **all_clients, games **all_games, log_info **info, in
 //2 - wrong move
 int all_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
 
-	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) return 0;
-	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) return 0;
+	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) {
+		return 0;
+	}
 
 	if (color != NULL) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
@@ -208,7 +214,9 @@ int all_first_move_no_kill(games **all_games, int game_ID, int first_position, i
 				return 0;
 			} 
 		}
-		else return 0;
+		else {
+			return 0;
+		}
 	}
 
 	if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col - first_position)) ) {
@@ -219,13 +227,19 @@ int all_first_move_no_kill(games **all_games, int game_ID, int first_position, i
 			return 27;
 		}
 	}
-	else return 0;
+	else {
+		return 0;
+	}
 }
 
 //
 int all_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) return 0;
-	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) return 0;
+	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) {
+		return 0;
+	}
 
 	if (color != NULL) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
@@ -233,7 +247,9 @@ int all_second_move_no_kill(games **all_games, int game_ID, int first_position, 
 				return 0;
 			} 
 		}
-		else return 0;
+		else {
+			return 0;	
+		}
 	}
 
 	if ( (dp_row == (cp_row - first_position)) && (dp_col == (cp_col + first_position)) ) {
@@ -244,13 +260,19 @@ int all_second_move_no_kill(games **all_games, int game_ID, int first_position, 
 			return 25;
 		}
 	}
-	else return 0;
+	else {
+		return 0;
+	}
 }
 
 //
 int king_first_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) return 0;
-	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) return 0;
+	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) {
+		return 0;
+	}
 
 	if (color != NULL) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
@@ -258,7 +280,9 @@ int king_first_move_no_kill(games **all_games, int game_ID, int first_position, 
 				return 0;
 			} 
 		}
-		else return 0;
+		else {
+			return 0;
+		}
 	}
 
 	if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col + first_position)) ) {
@@ -269,13 +293,19 @@ int king_first_move_no_kill(games **all_games, int game_ID, int first_position, 
 			return 27;
 		}
 	}
-	else return 0;
+	else  {
+		return 0;
+	}
 }
 
 //
 int king_second_move_no_kill(games **all_games, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) return 0;
-	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) return 0;
+	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) {
+		return 0;
+	}
 
 	if (color != NULL) {
 		if ((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row][cp_col] -> piece != NULL) {
@@ -283,7 +313,9 @@ int king_second_move_no_kill(games **all_games, int game_ID, int first_position,
 				return 0;
 			} 
 		}
-		else return 0;
+		else {
+			return 0;	
+		}
 	}
 
 	if ( (dp_row == (cp_row + first_position)) && (dp_col == (cp_col - first_position)) ) {
@@ -294,15 +326,21 @@ int king_second_move_no_kill(games **all_games, int game_ID, int first_position,
 			return 25;
 		}
 	}
-	else return 0;
+	else {
+		return 0;
+	}
 }
 
 //0 - nothing
 //1 - correct_move
 //2 - wrong move
 int all_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) return 0;
-	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) return 0;
+	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) {
+		return 0;
+	}
 
 	if (dp_col == (cp_col - second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col - first_position] -> piece != NULL) {
@@ -317,13 +355,19 @@ int all_first_move_kill(games **all_games, int game_ID, int first_position, int 
 			return 26;
 		}
 	}
-	else return 0;
+	else {
+		return 0;
+	}
 }
 
 //
 int all_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) return 0;
-	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) return 0;
+	if ((cp_row - first_position < 0) || (cp_row - first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) {
+		return 0;
+	}
 
 	if (dp_col == (cp_col + second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row - first_position][cp_col + first_position] -> piece != NULL) {
@@ -338,13 +382,19 @@ int all_second_move_kill(games **all_games, int game_ID, int first_position, int
 			return 26;
 		}
 	}
-	else return 0;
+	else {
+		return 0;
+	}
 }
 
 //
 int king_first_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) return 0;
-	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) return 0;
+	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col + first_position < 0) || (cp_col + first_position > 9)) {
+		return 0;
+	}
 
 	if (dp_col == (cp_col + second_position)) {
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col + first_position] -> piece != NULL) {
@@ -359,13 +409,19 @@ int king_first_move_kill(games **all_games, int game_ID, int first_position, int
 			return 26;
 		}
 	}
-	else return 0;
+	else {
+		return 0;
+	}
 }
 
 //
 int king_second_move_kill(games **all_games, int game_ID, int first_position, int second_position, int cp_row, int cp_col, int dp_row, int dp_col, char *color) {
-	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) return 0;
-	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) return 0;	
+	if ((cp_row + first_position < 0) || (cp_row + first_position > 9)) {
+		return 0;
+	}
+	if ((cp_col - first_position < 0) || (cp_col - first_position > 9)) {
+		return 0;	
+	}
 
 	if (dp_col == (cp_col - second_position)) {	
 		if((*all_games) -> games[game_ID] -> fields -> all_fields[cp_row + first_position][cp_col - first_position] -> piece != NULL) {
@@ -380,13 +436,14 @@ int king_second_move_kill(games **all_games, int game_ID, int first_position, in
 			return 26;
 		}
 	}
-	else return 0;
+	else {
+		return 0;	
+	}
 }
 
 void check_if_can_promote(games **all_games, log_info **info, int game_ID, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *color, char *type, int cp_row, int cp_col) {
 	if (strcmp(type, "man") == 0) {
 		char message_promote[100];
-		printf("%d %d\n", dp_row, dp_col);
 		if (!((*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece == NULL)) {
 			if ((*all_games) -> games[game_ID] -> fields -> all_fields[dp_row][dp_col] -> piece -> type == NULL) return;
 		}
@@ -426,48 +483,73 @@ int check_if_opponent_have_pieces(games **all_games, int game_ID, char *color) {
 }
 
 int check_if_can_move(games **all_games, int game_ID, int first_position, int second_position, char *color, char *type) {
-	/*
+	
 	int i, j, value;
-	int pom;
-	if(strcmp(color, "white") == 0) {
-		pom = 1;
-	}
-	else pom = -1;
 
 	for (i = 0; i < (*all_games) -> games[game_ID] -> fields -> size; i++) {
 		for (j = 0; j < (*all_games) -> games[game_ID] -> fields -> size; j++) {
 			if((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece != NULL) {
 				if(strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0) {
-					value = all_first_move_no_kill(all_games, game_ID, first_position, i, j, i-(pom*1), j-(pom*1), color);
-					if (value == 1) return 1;
 
-					value = all_first_move_kill(all_games, game_ID, first_position, second_position, i, j, i-(pom*2), j-(pom*2), color);	
-					if (value >= 100) return 1;
-		
-					value = all_second_move_no_kill(all_games, game_ID, first_position, i, j, i-(pom*1), j+(pom*1), color);
-					if (value == 1) return 1;
-
-					value = all_second_move_kill(all_games, game_ID, first_position, second_position, i, j, i-(pom*2), j+(pom*2), color);	
-					if (value >= 100) return 1;
-
-					if (strcmp(type, "king") == 0) {
-						value = king_first_move_no_kill(all_games, game_ID, first_position, i, j, i+(pom*1), j+(pom*1), color);
+					if (strcmp(color, "white") == 0) {
+						value = all_first_move_no_kill(all_games, game_ID, first_position, i, j, i-1, j-1, color);
 						if (value == 1) return 1;
-
-						value = king_first_move_kill(all_games, game_ID, first_position, second_position, i, j, i+(pom*2), j+(pom*2), color);	
+	
+						value = all_first_move_kill(all_games, game_ID, first_position, second_position, i, j, i-2, j-2, color);	
 						if (value >= 100) return 1;
-
-						value = king_second_move_no_kill(all_games, game_ID, first_position, i, j, i+(pom*1), j-(pom*1), color);
+			
+						value = all_second_move_no_kill(all_games, game_ID, first_position, i, j, i-1, j+1, color);
 						if (value == 1) return 1;
-
-						value = king_second_move_kill(all_games, game_ID, first_position, second_position, i, j, i+(pom*2), j-(pom*2), color);	
+	
+						value = all_second_move_kill(all_games, game_ID, first_position, second_position, i, j, i-2, j+2, color);	
 						if (value >= 100) return 1;
+	
+						if (strcmp(type, "king") == 0) {
+							value = king_first_move_no_kill(all_games, game_ID, first_position, i, j, i+1, j+1, color);
+							if (value == 1) return 1;
+	
+							value = king_first_move_kill(all_games, game_ID, first_position, second_position, i, j, i+2, j+2, color);	
+							if (value >= 100) return 1;
+	
+							value = king_second_move_no_kill(all_games, game_ID, first_position, i, j, i+1, j-1, color);
+							if (value == 1) return 1;
+	
+							value = king_second_move_kill(all_games, game_ID, first_position, second_position, i, j, i+2, j-2, color);	
+							if (value >= 100) return 1;
+						}
+					}
+					else {
+						value = all_first_move_no_kill(all_games, game_ID, first_position, i, j, i+1, j+1, color);
+						if (value == 1) return 1;
+	
+						value = all_first_move_kill(all_games, game_ID, first_position, second_position, i, j, i+2, j+2, color);	
+						if (value >= 100) return 1;
+			
+						value = all_second_move_no_kill(all_games, game_ID, first_position, i, j, i+1, j-1, color);
+						if (value == 1) return 1;
+	
+						value = all_second_move_kill(all_games, game_ID, first_position, second_position, i, j, i+2, j-2, color);	
+						if (value >= 100) return 1;
+	
+						if (strcmp(type, "king") == 0) {
+							value = king_first_move_no_kill(all_games, game_ID, first_position, i, j, i-1, j-1, color);
+							if (value == 1) return 1;
+	
+							value = king_first_move_kill(all_games, game_ID, first_position, second_position, i, j, i-2, j-2, color);	
+							if (value >= 100) return 1;
+	
+							value = king_second_move_no_kill(all_games, game_ID, first_position, i, j, i-1, j+1, color);
+							if (value == 1) return 1;
+	
+							value = king_second_move_kill(all_games, game_ID, first_position, second_position, i, j, i-2, j+2, color);	
+							if (value >= 100) return 1;
+						}
 					}
 				}
 			}
 		}
 	}
-	return value;
-	*/
-	return 1;
+	return 0;
+	
+	//return 1;
 }

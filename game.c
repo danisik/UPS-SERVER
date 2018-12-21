@@ -187,21 +187,7 @@ void process_move(games **all_games, clients *clients, log_info **info, int game
 	else {
 		client_2 = get_client_by_name(clients, (*all_games) -> games[game_ID] -> name_1);
 	}
-
-	int can_move = check_if_can_move(all_games, game_ID, first_position, second_position, client_1 -> color, type);
-			
-	if (can_move == 0) {
-		char opponent_color[10];
-		if (strcmp(color, "white") == 0) strcpy(opponent_color, "black");
-		else strcpy(opponent_color, "white");
-
-		int can_move_opponent = -1;
-		can_move_opponent = check_if_can_move(all_games, game_ID, first_position, second_position, opponent_color, type);
-		end_game(can_move_opponent, client_1 -> socket_ID, client_2 -> socket_ID, info);
-		return;
-	}
 	
-	int can_kill = check_can_kill(all_games, game_ID, color, type);		
 
 	if (strcmp(color, "NA") == 0 || strcmp(type, "NA") == 0) {
 		send_message(client_1 -> socket_ID, "wrong_move;3;\n", info);
@@ -217,8 +203,9 @@ void process_move(games **all_games, clients *clients, log_info **info, int game
 		send_message(client_1 -> socket_ID, "wrong_move;2;\n", info);
 		return;
 	}
-	
-	
+		
+	int can_kill = check_can_kill(all_games, game_ID, color, type);		
+
 	if (can_kill == 1) {
 		if (dp_row == (cp_row - second_position)) {
 			int first_move_kill = all_first_move_kill(all_games, game_ID, first_position, second_position, cp_row, cp_col, dp_row, dp_col, color);
@@ -352,20 +339,69 @@ game *find_game_by_name(games *all_games, char *name) {
 //0 - draw
 //1 - opponent win
 //2 - player win 
-void end_game(int status, int current_player_socket_ID, int second_player_socket_ID, log_info **info) {
-	switch(status) {
-		case 0:
-			send_message(current_player_socket_ID, "end_game;draw;\n", info);
-			send_message(second_player_socket_ID, "end_game;draw;\n", info);
+void end_game(int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info) {
+	switch(status_opponent) {
+		case 0: 
+			if (status == 0) {
+				send_message(current_player_socket_ID, "end_game;draw;\n", info);
+				send_message(second_player_socket_ID, "end_game;draw;\n", info);
+			}
+			else {
+				send_message(current_player_socket_ID, "end_game;win;\n", info);
+				send_message(second_player_socket_ID, "end_game;lose;\n", info);
+			}
 			break;
+
 		case 1:
-			send_message(current_player_socket_ID, "end_game;lose;\n", info);
-			send_message(second_player_socket_ID, "end_game;win;\n", info);
-			break;
-		case 2: 
-			send_message(current_player_socket_ID, "end_game;win;\n", info);
-			send_message(second_player_socket_ID, "end_game;lose;\n", info);
+				send_message(current_player_socket_ID, "end_game;lose;\n", info);
+				send_message(second_player_socket_ID, "end_game;win;\n", info);				
 			break;
 	}
+	return;
+}
+
+
+void check_can_move(clients *all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type) {
+	client *client_1 = get_client_by_name(all_clients, (*all_games) -> games[game_ID] -> now_playing);
+	client *client_2;
+
+	if ((*all_games) -> games[game_ID] == NULL) return;
+	if (client_1 == NULL) return;
+
+	int first_position_first, second_position_first;
+	int first_position_second, second_position_second;
+	if (strcmp(color, "white") == 0) {
+		first_position_first = 1;
+		second_position_first = 2;
+
+		first_position_second = -1;
+		second_position_second = -2;
+	}
+	else {
+		first_position_first = -1;
+		second_position_first = -2;
+
+		first_position_second = 1;
+		second_position_second = 2;
+	}
+	
+	if (strcmp((*all_games) -> games[game_ID] -> now_playing, (*all_games) -> games[game_ID] -> name_1) == 0) {
+		client_2 = get_client_by_name(all_clients, (*all_games) -> games[game_ID] -> name_2);
+	}
+	else {
+		client_2 = get_client_by_name(all_clients, (*all_games) -> games[game_ID] -> name_1);
+	}
+
+	int can_move = check_if_can_move(all_games, game_ID, first_position_first, second_position_first, color, type);
+			
+	char opponent_color[10];
+	if (strcmp(color, "white") == 0) strcpy(opponent_color, "black");
+	else strcpy(opponent_color, "white");
+
+	int can_move_opponent = -1;
+	can_move_opponent = check_if_can_move(all_games, game_ID, first_position_second, second_position_second, opponent_color, type);
+	if (can_move == 0 || can_move_opponent == 0) end_game(can_move, can_move_opponent, client_2 -> socket_ID, client_1 -> socket_ID, info); //switched clients, because when we perform this method
+																		//, then client who now playing is opponent, not we
+	
 	return;
 }

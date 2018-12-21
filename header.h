@@ -137,5 +137,5 @@ int switch_no_kill(clients **all_clients, int value, games **all_games, log_info
 int switch_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
 game *find_game_by_name(games *all_games, char *name);
 
-void end_game(int status, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
-
+void end_game(int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
+void check_can_move(clients *all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type);

@@ -12,6 +12,9 @@
 #include <arpa/inet.h>
 #include "header.h"
 
+//TODO -> CONDITIONS -> KONTROLA ZDA ČLOVĚK MŮŽE HRÁT ASPOŇ JEDNOU FIGURKOU
+//TODO -> CONDITIONS -> KONTROLA ZDA MŮŽU ZNOVA PŘESKOČIT OPONENTOVO FIGURKU, POKUD JSEM MU UŽ JEDNU SEBRAL
+
 void sigint_handler(int sig);
 log_info *info; 
 char *filename = "log.txt";
@@ -66,7 +69,7 @@ int main(int argc, char *argv[])
 	int len_addr;
 	int a2read;
 	struct sockaddr_in my_addr, peer_addr;
-	fd_set client_socks, tests;
+	fd_set client_socks, tests, errfd;
 	
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
 	
@@ -98,12 +101,13 @@ int main(int argc, char *argv[])
 		printf("Listen - ERR\n");
 	}
 	FD_ZERO(&client_socks);
+	FD_ZERO(&errfd);
 	FD_SET(server_socket, &client_socks);
 	signal(SIGINT, sigint_handler);	
 	while(1) {
 		tests = client_socks;
 		client_timeout.tv_sec = 300;
-		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, (fd_set*)NULL, &client_timeout);
+		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, &errfd, &client_timeout);
 		for (fd = 3; fd < FD_SETSIZE; fd++) {
 			if (FD_ISSET(fd, &tests)) {
 				if (fd == server_socket) {
@@ -114,9 +118,12 @@ int main(int argc, char *argv[])
 				else {
 					int int_ioctl = ioctl(fd, FIONREAD, &a2read);
 					if (int_ioctl >= 0) {	
+						client *cl = get_client_by_socket_ID(array_clients, fd);
 						if (a2read > 0) {
-							client *cl = get_client_by_socket_ID(array_clients, fd);
-							int int_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0);	
+							if (FD_ISSET(fd, &errfd)) {
+								delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 1, &cl);
+							}
+							int int_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0);								
 							if (recv <= 0) {
 								disconnect(&array_clients, &info, all_games, fd, &cl);
 								continue;
@@ -164,7 +171,7 @@ int main(int argc, char *argv[])
 												
 						}
 						else {
-							//delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, "end_game_left;\n", &cl);
+							delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 1, &cl);
 						}						
 					}
 					else {
@@ -420,11 +427,13 @@ void client_move(games **all_games, clients *array_clients, log_info **info, cha
 	int dp_row = atoi(array[3]);
 	int dp_col = atoi(array[4]);
 	char *color = array[5];
-	char *piece = array[6];	
+	char *type = array[6];	
 			
-	printf("Move: GID=%d CP=%d,%d DP=%d,%d COLOR=%s TYPE=%s\n", game_ID, cp_row, cp_col, dp_row, dp_col, color, piece);
+	printf("Move: GID=%d CP=%d,%d DP=%d,%d COLOR=%s TYPE=%s\n", game_ID, cp_row, cp_col, dp_row, dp_col, color, type);
 							
-	process_move(all_games, array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, piece); 
+	process_move(all_games, array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, type); 
+	check_can_move(array_clients, all_games, info, game_ID, cp_row, dp_row, color, type);
+
 	return;
 }
 
@@ -613,7 +622,6 @@ void game_info(){
 int check_if_contains_semicolon(char *cbuf) {
 	char *e;
 	int index;
-	printf("OK\n");
 	e = strchr(cbuf, ';');
 	if (e == NULL) return 0;
 	index = (int)(e - cbuf);
