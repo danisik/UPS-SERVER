@@ -1,3 +1,15 @@
+//
+//	DRAUGHTS
+//	VERSION 1.0.0
+//
+//	Copyright (c) 2010-2018 Dept. of Computer Science & Engineering,
+//	Faculty of Applied Sciences, University of West Bohemia in Plzeň.
+//	All rights reserved.
+//
+//	Code written by:	Vojtěch Danišík
+//	Last update on:		21-12-2018
+//
+
 typedef enum { 
 	IN_LOBBY, 		//0
 	WANNA_PLAY,		//1
@@ -41,7 +53,7 @@ struct the_field {
 };
 
 struct the_fields {
-	int size; //10
+	int size;
 	field ***all_fields;
 	int count_pieces;
 };
@@ -81,7 +93,7 @@ void send_message(int client_socket, char *message, log_info **info);
 void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd, client **client);
 void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **client);
 void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd, client **cl);
-void client_move(games **all_games, clients *array_clients, log_info **info, char *tok);
+void client_move(games **all_games, clients **array_clients, log_info **info, char *tok);
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd);
 void log_all(char *filename, log_info *info);
 void server_running(struct timeval start, struct timeval end, log_info **info);
@@ -137,5 +149,5 @@ int switch_no_kill(clients **all_clients, int value, games **all_games, log_info
 int switch_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
 game *find_game_by_name(games *all_games, char *name);
 
-void end_game(int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
-void check_can_move(clients *all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type);
+void end_game(clients **cls, games **all_games, int game_ID, int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
+void check_can_move(clients **all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type);

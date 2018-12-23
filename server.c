@@ -1,3 +1,15 @@
+//
+//	DRAUGHTS
+//	VERSION 1.0.0
+//
+//	Copyright (c) 2010-2018 Dept. of Computer Science & Engineering,
+//	Faculty of Applied Sciences, University of West Bohemia in Plzeň.
+//	All rights reserved.
+//
+//	Code written by:	Vojtěch Danišík
+//	Last update on:		21-12-2018
+//
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -12,8 +24,6 @@
 #include <arpa/inet.h>
 #include "header.h"
 
-//TODO -> CONDITIONS -> KONTROLA ZDA ČLOVĚK MŮŽE HRÁT ASPOŇ JEDNOU FIGURKOU
-//TODO -> CONDITIONS -> KONTROLA ZDA MŮŽU ZNOVA PŘESKOČIT OPONENTOVO FIGURKU, POKUD JSEM MU UŽ JEDNU SEBRAL
 
 void sigint_handler(int sig);
 log_info *info; 
@@ -84,7 +94,7 @@ int main(int argc, char *argv[])
 
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(port);
-	my_addr.sin_addr.s_addr = INADDR_ANY;
+	my_addr.sin_addr.s_addr = address;
 
 	return_value = bind(server_socket, (struct sockaddr *) &my_addr, sizeof(struct sockaddr_in));
 
@@ -153,7 +163,7 @@ int main(int argc, char *argv[])
 							else if (strcmp(type_message, "client_move") == 0) {
 								if (cl != NULL) {
 									if (cl -> state == 3) {
-										client_move(&all_games, array_clients, &info, tok);
+										client_move(&all_games, &array_clients, &info, tok);
 									}
 								}							
 							}
@@ -166,7 +176,7 @@ int main(int argc, char *argv[])
 								delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 1, &cl);
 							}
 							else {
-								//spatny prikaz
+								printf("wrong type\n");
 							}	
 												
 						}
@@ -196,13 +206,11 @@ void sigint_handler(int sig) {
 	return;
 }
 
-//return: 0 - not contains name
-//	  1 - contains name
-
 /*
  * Check if name exists in array of clients
  * @param array_clients - array of logged clients
  * @param name - selected name of actually loging client
+ * @return 0 if name does not exist, 1 if exist
  */
 int name_exists (clients *array_clients, char *name) {
 	int i;
@@ -410,7 +418,7 @@ void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, 
  * @param info - structures to save log info
  * @param tok - text with info about processed move in client
  */
-void client_move(games **all_games, clients *array_clients, log_info **info, char *tok) {
+void client_move(games **all_games, clients **array_clients, log_info **info, char *tok) {
 	int i = 0;
 	char *array[10];
 						
@@ -431,7 +439,7 @@ void client_move(games **all_games, clients *array_clients, log_info **info, cha
 			
 	printf("Move: GID=%d CP=%d,%d DP=%d,%d COLOR=%s TYPE=%s\n", game_ID, cp_row, cp_col, dp_row, dp_col, color, type);
 							
-	process_move(all_games, array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, type); 
+	process_move(all_games, *array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, type); 
 	check_can_move(array_clients, all_games, info, game_ID, cp_row, dp_row, color, type);
 
 	return;
@@ -540,21 +548,6 @@ void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_so
 	return;
 }
 
-//Každý program bude doplněn o zpracování statistických údajů: 
-//	1.přenesený počet bytů
-//	2.přenesený počet zpráv
-//	3.počet navázaných spojení
-//	4.počet přenosů zrušených pro chybu
-//	5.doba běhu 
-//	6.apod.
-
-//	1.strlen(send_message) 
-//	2.počet send
-//	3.úspěšný connect
-//	4.počet bitů, které se přenesli a nevyužili jsme je
-//	5.nazačátku si uložit čas, při ukončení čas, z toho zjistit jak dlouho běžel server
-
-
 /*
  * Log info into file
  * @param filename - name of file
@@ -618,6 +611,7 @@ void game_info(){
 /*
  * Check if input string contains semicolon between index 1 - 20
  * @param cbuf - input string to be checked
+ * @return 0 if not contains, 1 if contains
  */
 int check_if_contains_semicolon(char *cbuf) {
 	char *e;

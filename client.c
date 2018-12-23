@@ -1,3 +1,15 @@
+//
+//	DRAUGHTS
+//	VERSION 1.0.0
+//
+//	Copyright (c) 2010-2018 Dept. of Computer Science & Engineering,
+//	Faculty of Applied Sciences, University of West Bohemia in Plzeň.
+//	All rights reserved.
+//
+//	Code written by:	Vojtěch Danišík
+//	Last update on:		21-12-2018
+//
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -85,6 +97,7 @@ void client_remove(clients **array_clients, wanna_play **wanna_play, int socket_
  * Return client based on sent socket_ID
  * @param array_clients - array of logged clients
  * @param socket_ID - socket ID of logging client
+ * @return client if founded or NULL
  */	
 client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
 	int i;
@@ -103,6 +116,7 @@ client *get_client_by_socket_ID(clients *array_clients, int socket_ID) {
  * Return client based on set name
  * @param array_clients - array of logged clients
  * @param name - name of client
+ * @return client if founded or NULL
  */	
 client *get_client_by_name(clients *array_clients, char *name) {
 	int i;

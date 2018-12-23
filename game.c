@@ -1,3 +1,15 @@
+//
+//	DRAUGHTS
+//	VERSION 1.0.0
+//
+//	Copyright (c) 2010-2018 Dept. of Computer Science & Engineering,
+//	Faculty of Applied Sciences, University of West Bohemia in Plzeň.
+//	All rights reserved.
+//
+//	Code written by:	Vojtěch Danišík
+//	Last update on:		21-12-2018
+//
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -8,12 +20,21 @@
 #include <sys/ioctl.h>
 #include "header.h"
 
+/*
+ * create array contains player which wants to play a game
+ * @param wanna_play - array of clients who wants to play a game
+ */
 void create_wanna_play(wanna_play **wanna_plays) {
 	(*wanna_plays) = calloc(1, sizeof(wanna_play));
 	(*wanna_plays) -> size = 0;
 	(*wanna_plays) -> socket_IDs = calloc(1, sizeof(int));
 }
 
+/*
+ * add player to array 
+ * @param wanna_play - array of clients who wants to play a game
+ * @param socket_ID - socket ID of logging client
+ */
 void add_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 	(*wanna_plays) -> size++;
 	printf("socket_ID %d want play a game\n", socket_ID);
@@ -22,6 +43,11 @@ void add_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 	printf("%d client/s wanna play a game\n", (*wanna_plays) -> size);
 }
 
+/*
+ * remove player to array 
+ * @param wanna_play - array of clients who wants to play a game
+ * @param socket_ID - socket ID of logging client
+ */
 void remove_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 	int i;
 	int socket;
@@ -41,6 +67,10 @@ void remove_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 	}
 }
 
+/*
+ * add player to array 
+ * @param all_games - array of all games
+ */
 void create_games(games **all_games) {
 	int max_games = 16;
 	(*all_games) = calloc(1, sizeof(games));
@@ -48,6 +78,13 @@ void create_games(games **all_games) {
 	(*all_games) -> games = calloc(1, max_games * sizeof(game));	
 }
 
+/*
+ * inicialize pieces into field
+ * @param fields - fields 
+ * @param color - color of pieces
+ * @param row - row of piece
+ * @param col - column of piece
+ */
 void inicialize_pieces(fields **fields, char *color, int row, int col) {
 	int pieces_row = 2, fields_row = 10;
 	int i, j;
@@ -64,6 +101,10 @@ void inicialize_pieces(fields **fields, char *color, int row, int col) {
 	}
 }
 
+/*
+ * inicialize fields
+ * @param gm - game 
+ */
 void create_fields(game **gm) {
 	int size = 10;		
 	char *color_white = "white";
@@ -97,6 +138,13 @@ void create_fields(game **gm) {
 	(*gm) -> fields = fields; 	
 }
 
+/*
+ * create game
+ * @param gm - game 
+ * @param name_1 - name of player 1
+ * @param name_2 - name of player 2
+ * @param now_playing - name of player who is on turn
+ */
 void create_game(game **gm, char *name_1, char *name_2, char *now_playing) {
 	(*gm) = calloc(1, sizeof(game));
 	(*gm) -> name_1 = name_1;
@@ -105,6 +153,13 @@ void create_game(game **gm, char *name_1, char *name_2, char *now_playing) {
 	create_fields(gm);
 }
 
+/*
+ * add game into array
+ * @param all_games - array of all games 
+ * @param name_1 - name of player 1
+ * @param name_2 - name of player 2
+ * @param now_playing - name of player who is on turn
+ */
 void add_game(games **all_games, char *name_1, char *name_2, char *now_playing) {
 	(*all_games) -> games_count++;
 	printf("Games count: %d\n", (*all_games) -> games_count);
@@ -115,6 +170,13 @@ void add_game(games **all_games, char *name_1, char *name_2, char *now_playing) 
 	(*all_games) -> games[((*all_games) -> games_count) - 1] -> game_ID = ((*all_games) -> games_count) - 1;
 }
 
+/*
+ * remove game from array
+ * @param cls - array of clients 
+ * @param all_games - array of all games
+ * @param name_2 - structures to save info about server
+ * @param game_ID - ID of game
+ */
 void remove_game(clients **cls, games **all_games, log_info **info, int game_ID) {
 	int i;
 	int count = (*all_games) -> games_count;
@@ -148,6 +210,19 @@ void remove_game(clients **cls, games **all_games, log_info **info, int game_ID)
 	}
 }
 
+/*
+ * process move from client
+ * @param all_games - array of all games
+ * @param clients - array of clients 
+ * @param info - structures to save log info
+ * @param game_ID - ID of game
+ * @param cp_row - x position (row) of piece before move
+ * @param cp_col - y position (column) of piece before move
+ * @param dp_row - x position (row) of piece after move
+ * @param dp_col - y position (column) of piece after move
+ * @param color - color set to player
+ * @param type - type of piece
+ */
 void process_move(games **all_games, clients *clients, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type) {
 
 	//1//You can't move opponents piece;
@@ -284,6 +359,22 @@ void process_move(games **all_games, clients *clients, log_info **info, int game
 	}	
 }
 
+/*
+ * send message about move without killing or error
+ * @param all_clients - array of clients 
+ * @param value - value from condition methods
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param game_ID - ID of game
+ * @param cp_row - x position (row) of piece before move
+ * @param cp_col - y position (column) of piece before move
+ * @param dp_row - x position (row) of piece after move
+ * @param dp_col - y position (column) of piece after move
+ * @param curr_pl_socket_ID - socket ID of current player
+ * @param sec_pl_socket_ID - socket ID of second player
+ * @param sec_pl_name - name of second player
+ * @return value 0 if other value is send to method, 1 if value is ok
+ */
 int switch_no_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name) {
 	switch (value) {
 		case 1:
@@ -300,6 +391,25 @@ int switch_no_kill(clients **all_clients, int value, games **all_games, log_info
 	}
 }
 
+/*
+ * send message about move with killing or error
+ * @param all_clients - array of clients 
+ * @param value - value from condition methods
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param game_ID - ID of game
+ * @param first_position - constant with value 1 (-1 for player with black piece)
+ * @param cp_row - x position (row) of piece before move
+ * @param cp_col - y position (column) of piece before move
+ * @param dp_row - x position (row) of piece after move
+ * @param dp_col - y position (column) of piece after move
+ * @param curr_pl_socket_ID - socket ID of current player
+ * @param sec_pl_socket_ID - socket ID of second player
+ * @param sec_pl_name - name of second player
+ * @param color - color set to player
+ * @param type - type of piece
+ * @return value 0 if other value is send to method, 1 if value is ok
+ */
 int switch_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type) {
 	switch (value) {
 		case 100:
@@ -326,6 +436,12 @@ int switch_kill(clients **all_clients, int value, games **all_games, log_info **
 	}
 }
 
+/*
+ * find game by name of player
+ * @param all_games - array of all games
+ * @param name - name of player in game
+ * @return game if found or NULL
+ */
 game *find_game_by_name(games *all_games, char *name) {
 	int i;
 	for (i = 0; i < all_games -> games_count; i++) {
@@ -336,10 +452,18 @@ game *find_game_by_name(games *all_games, char *name) {
 	return NULL;
 }
 
-//0 - draw
-//1 - opponent win
-//2 - player win 
-void end_game(int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info) {
+/*
+ * end game 
+ * @param cls - array of clients 
+ * @param all_games - array of all games
+ * @param game_ID - ID of game
+ * @param status - status of first player
+ * @param status_opponent - status of opponent
+ * @param current_player_socket_ID - socket ID of current player
+ * @param second_player_socket_ID - socket ID of opponent
+ * @param info - structures to save log info
+ */
+void end_game(clients **cls, games **all_games, int game_ID, int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info) {
 	switch(status_opponent) {
 		case 0: 
 			if (status == 0) {
@@ -357,12 +481,26 @@ void end_game(int status, int status_opponent, int current_player_socket_ID, int
 				send_message(second_player_socket_ID, "end_game;win;\n", info);				
 			break;
 	}
+
+	remove_game(cls, all_games, info, game_ID);
 	return;
 }
 
-
-void check_can_move(clients *all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type) {
-	client *client_1 = get_client_by_name(all_clients, (*all_games) -> games[game_ID] -> now_playing);
+/*
+ * check if player can move with any piece 
+ * @param all_clients - array of clients 
+ * @param all_games - array of all games
+ * @param info - structures to save log info
+ * @param game_ID - ID of game
+ * @param cp_row - x position (row) of piece before move
+ * @param cp_col - y position (column) of piece before move
+ * @param dp_row - x position (row) of piece after move
+ * @param dp_col - y position (column) of piece after move
+ * @param color - color set to player
+ * @param type - type of piece
+ */
+void check_can_move(clients **all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type) {
+	client *client_1 = get_client_by_name(*all_clients, (*all_games) -> games[game_ID] -> now_playing);
 	client *client_2;
 
 	if ((*all_games) -> games[game_ID] == NULL) return;
@@ -386,10 +524,10 @@ void check_can_move(clients *all_clients, games **all_games, log_info **info, in
 	}
 	
 	if (strcmp((*all_games) -> games[game_ID] -> now_playing, (*all_games) -> games[game_ID] -> name_1) == 0) {
-		client_2 = get_client_by_name(all_clients, (*all_games) -> games[game_ID] -> name_2);
+		client_2 = get_client_by_name(*all_clients, (*all_games) -> games[game_ID] -> name_2);
 	}
 	else {
-		client_2 = get_client_by_name(all_clients, (*all_games) -> games[game_ID] -> name_1);
+		client_2 = get_client_by_name(*all_clients, (*all_games) -> games[game_ID] -> name_1);
 	}
 
 	int can_move = check_if_can_move(all_games, game_ID, first_position_first, second_position_first, color, type);
@@ -400,8 +538,9 @@ void check_can_move(clients *all_clients, games **all_games, log_info **info, in
 
 	int can_move_opponent = -1;
 	can_move_opponent = check_if_can_move(all_games, game_ID, first_position_second, second_position_second, opponent_color, type);
-	if (can_move == 0 || can_move_opponent == 0) end_game(can_move, can_move_opponent, client_2 -> socket_ID, client_1 -> socket_ID, info); //switched clients, because when we perform this method
-																		//, then client who now playing is opponent, not we
+	if (can_move == 0 || can_move_opponent == 0) end_game(all_clients, all_games, game_ID, can_move, can_move_opponent, client_2 -> socket_ID, client_1 -> socket_ID, info); 
+															//switched clients, because when we perform this method
+															//, then client who now playing is opponent, not we
 	
 	return;
 }
