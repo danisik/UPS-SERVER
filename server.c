@@ -35,20 +35,43 @@ struct timeval server_end;
 int main(int argc, char *argv[])
 {	
 	int port = 10000;
-	char address = INADDR_ANY;
 	game_info();
+
+	struct sockaddr_in my_addr, peer_addr;
+
+	memset(&my_addr, 0, sizeof(struct sockaddr_in));
+
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_port = htons(port);
+	my_addr.sin_addr.s_addr = INADDR_ANY;
 	switch(argc) {
-		case 2:
-			if (strcmp(argv[0], "-address") == 0 || strcmp(argv[0], "-a") == 0) address = inet_addr(argv[1]);
-			else if (strcmp(argv[0], "-port") == 0 || strcmp(argv[0], "-p") == 0) port = atoi(argv[1]);
+		case 3:
+			if (strcmp(argv[1], "-address") == 0 || strcmp(argv[1], "-a") == 0) {
+				printf("Address set to %s\n", argv[2]);
+				my_addr.sin_addr.s_addr = inet_addr(argv[2]);
+			}
+			else if (strcmp(argv[1], "-port") == 0 || strcmp(argv[1], "-p") == 0) {
+				printf("Port set to %d\n", atoi(argv[2]));
+				my_addr.sin_port = htons(atoi(argv[2]));
+			}
 			break;
-		case 4:
-			if (strcmp(argv[0], "-address") == 0 || strcmp(argv[0], "-a") == 0) address = inet_addr(argv[1]);
-			if (strcmp(argv[2], "-port") == 0 || strcmp(argv[2], "-p") == 0) port = atoi(argv[3]);
+		case 5:
+			if (strcmp(argv[1], "-address") == 0 || strcmp(argv[1], "-a") == 0) {
+				printf("Address set to %s\n", argv[2]);
+				my_addr.sin_addr.s_addr = inet_addr(argv[2]);
+			}
+			if (strcmp(argv[3], "-port") == 0 || strcmp(argv[3], "-p") == 0) {
+				printf("Port set to %d\n", atoi(argv[4]));
+				my_addr.sin_port = htons(atoi(argv[4]));
+			}
+			break;
+		case 1:
+			break;
+		default:
+			printf("Wrong parameters set\n");
 			break;
 	}
 	int max_players = 32;
-
 	remove(filename);
 
 	clients *array_clients;	
@@ -78,7 +101,6 @@ int main(int argc, char *argv[])
 	char cbuf[cbuf_size];
 	int len_addr;
 	int a2read;
-	struct sockaddr_in my_addr, peer_addr;
 	fd_set client_socks, tests, errfd;
 	
 	server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -89,12 +111,6 @@ int main(int argc, char *argv[])
 	gettimeofday(&server_start, NULL);	
 
 	if (return_value == -1)	printf("setsockopt ERR\n");
-
-	memset(&my_addr, 0, sizeof(struct sockaddr_in));
-
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(port);
-	my_addr.sin_addr.s_addr = address;
 
 	return_value = bind(server_socket, (struct sockaddr *) &my_addr, sizeof(struct sockaddr_in));
 
@@ -604,7 +620,7 @@ void game_info(){
 	printf("Info about draughts\n");
 	printf("-address || -a [IPv4] : set listening address (valid IPv4), default INADDR_ANY\n");
 	printf("-port || -p [number] : set listening port (1024-65535), default 10000\n");
-	printf("Example: ./server -a 127.0.0.1 -p 10000\n\n");
+	printf("Example: ./server.exe -a 127.0.0.1 -p 10000\n\n");
 }
 
 
