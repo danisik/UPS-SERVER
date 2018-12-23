@@ -36,7 +36,6 @@ int check_can_kill(games **all_games, int game_ID, char *color, char *type) {
 				if (strcmp( (*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0 ) {			
 					tmp_can_kill = check_if_can_kill((*all_games) -> games[game_ID] -> fields, i, j, color, (*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> type);	
 					if (tmp_can_kill == 1) {
-						printf("%d %d\n", i, j);
 						return tmp_can_kill;
 					}
 				}
@@ -243,7 +242,6 @@ void send_all_kill(clients **all_clients, games **all_games, log_info **info, in
 		end_game(all_clients, all_games, game_ID, 1, 0, curr_pl_socket_ID, sec_pl_socket_ID, info);
 	}
 
-	printf("here\n");
 	int can_kill_next = check_can_kill(all_games, game_ID, color, type);
 	if(can_kill_next == 0) {
 		set_state(&client_1, 4);
