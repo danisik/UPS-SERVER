@@ -5,7 +5,7 @@ OBJ = client.o conditions.o game.o server.o
 all: $(BIN) move clean
 
 $(BIN): $(OBJ)
-	$(CC) $^ -o $@
+	$(CC) $^ -o $@ -lpthread
 
 %.o: %.c
 	$(CC) -c $< -o $@

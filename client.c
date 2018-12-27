@@ -18,6 +18,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <pthread.h>
 #include "header.h"
 
 /*
@@ -43,6 +44,8 @@ void create_client(client **cl, char *name, int socket_ID) {
 	strcpy((*cl) -> name, name);
 	(*cl) -> socket_ID = socket_ID;
 	(*cl) -> state = 0;
+	(*cl) -> connected = 1;
+	(*cl) -> disconnected_time = 0;
 	return;
 }
 
@@ -150,5 +153,35 @@ void set_state(client **client, int state) {
  */	
 void set_color(client **client, char *color) {
 	strcpy((*client) -> color, color);
+	return;
+}
+
+/*
+ * Set connected attribute
+ * @param client - client
+ * @param connected - set number indicates if client is connected
+ */	
+void set_connected(client **cl, int connected) {
+	(*cl) -> connected = connected;
+	return;
+}
+
+/*
+ * Set socket id
+ * @param client - client
+ * @param socket_ID - socket id of client
+ */	
+void set_socket_ID(client **cl, int socket_ID) {
+	(*cl) -> socket_ID = socket_ID;
+	return;
+}
+
+/*
+ * Set disconnected time
+ * @param client - client
+ * @param disconnected_time - set time indicates how many seconds are client disconnected
+ */	
+void set_disconnected_time(client **cl, int disconnected_time) {
+	(*cl) -> disconnected_time = disconnected_time;
 	return;
 }

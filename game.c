@@ -68,6 +68,23 @@ void remove_wanna_play(wanna_play **wanna_plays, int socket_ID) {
 }
 
 /*
+ * Check if player is in array of players who wants to play a game
+ * @param wanna_play - array of clients who wants to play a game
+ * @param socket_ID - socket ID of logging client
+ */
+int player_wanna_play(wanna_play *wanna_plays, client *cl) {
+	if (cl == NULL) return 0;
+
+	int i;
+	for (i = 0; i < wanna_plays -> size; i++) {
+		if (wanna_plays -> socket_IDs[i] == cl -> socket_ID) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/*
  * add player to array 
  * @param all_games - array of all games
  */
