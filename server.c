@@ -326,7 +326,6 @@ void login(clients **array_clients, games *all_games, log_info **info, char *tok
  */
 void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players) {
 	client *cl = get_client_by_name(*array_clients, name);
-	set_socket_ID(&cl, fd);
 								
 	char board[1024];
 	game *game = find_game_by_name(all_games, name);
@@ -343,8 +342,12 @@ void reconnect(clients **array_clients, games *all_games, log_info **info, char 
 		char *message = "login_ok;\n";
 		send_message(fd, message, info);
 
+		set_socket_ID(&cl, fd);
+		pthread_create(&(cl -> client_thread), NULL, &check_connectivity, &cl); 
 		return;
 	}
+	set_socket_ID(&cl, fd);
+	pthread_create(&(cl -> client_thread), NULL, &check_connectivity, &cl); 
 
 	char now_playing[10];
 	if (strcmp(game -> now_playing, name) == 0) { 
@@ -682,6 +685,8 @@ int check_if_contains_semicolon(char *cbuf) {
 void *check_connectivity(void *args) {
 	client **cli = (client**) args;	
 	int socket_ID = (*cli) -> socket_ID;
+	char name[30];
+	strcpy((*cli) -> name, name);
 	client *cl = NULL;
 	int disconnected_time = 0;
 	while(1) {
@@ -691,6 +696,8 @@ void *check_connectivity(void *args) {
 			printf("Client with socket ID %d is null, deleting thread\n", socket_ID);	
 			break;
 		}
+		if (strcmp(name, cl -> name) != 0) break;
+
 		printf("Client with socket ID %d connected: %d\n", socket_ID, cl -> connected);
 		if (cl -> connected == 1) {
 			set_connected(&cl, 0);
