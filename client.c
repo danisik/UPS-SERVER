@@ -18,7 +18,6 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
-#include <pthread.h>
 #include "header.h"
 
 /*
@@ -43,9 +42,9 @@ void create_client(client **cl, char *name, int socket_ID) {
 	(*cl) -> name = calloc(1, strlen(name) * sizeof(char));
 	strcpy((*cl) -> name, name);
 	(*cl) -> socket_ID = socket_ID;
-	(*cl) -> state = 0;
 	(*cl) -> connected = 1;
 	(*cl) -> disconnected_time = 0;
+	(*cl) -> state = 0;
 	return;
 }
 

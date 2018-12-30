@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <pthread.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -22,24 +23,21 @@
 #include <errno.h>
 #include <signal.h>
 #include <arpa/inet.h>
-#include <pthread.h>
 #include "header.h"
-
-#define MAX_TIME_DISCONNECT 120
 
 
 void sigint_handler(int sig);
 log_info *info; 
 char *filename = "log.txt";
-	
-games *all_games;
-wanna_play *wanna_plays;
-clients *array_clients;	
+
+clients *a_c;	
+games *a_g;
+wanna_play *w_p;
+fd_set c_s, tests, errfd;
+
 
 struct timeval server_start;
 struct timeval server_end;
-
-fd_set client_socks, tests;
 
 int main(int argc, char *argv[])
 {	
@@ -83,9 +81,13 @@ int main(int argc, char *argv[])
 	int max_players = 32;
 	remove(filename);
 
-	create_clients(&array_clients);
-	create_games(&all_games);
-	create_wanna_play(&wanna_plays);
+	create_clients(&a_c);
+	create_games(&a_g);
+	create_wanna_play(&w_p);
+
+	struct timeval client_timeout;
+	client_timeout.tv_sec = 300; //5 min
+	//client_timeout.tv_sec = 10; //10 sec
 
 	info = calloc(1, sizeof(info));
 
@@ -125,37 +127,36 @@ int main(int argc, char *argv[])
 	} else {	
 		printf("Listen - ERR\n");
 	}
-	FD_ZERO(&client_socks);
-	FD_SET(server_socket, &client_socks);
+	FD_ZERO(&c_s);
+	FD_ZERO(&errfd);
+	FD_SET(server_socket, &c_s);
 	signal(SIGINT, sigint_handler);	
-
-	for (;;) {
-	
-		tests = client_socks;
-		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *)0);
-		if (return_value == 0) {
-			delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 0);
-		}
-		if (return_value < 0){
-			printf("Select ERR\n");
-			return -1;
-		}
+	while(1) {
+		tests = c_s;
+		client_timeout.tv_sec = 300;
+		return_value = select(FD_SETSIZE, &tests, (fd_set*)NULL, &errfd, &client_timeout);
 		for (fd = 3; fd < FD_SETSIZE; fd++) {
 			if (FD_ISSET(fd, &tests)) {
 				if (fd == server_socket) {
 					client_socket = accept(server_socket, (struct sockaddr *) &peer_addr, &len_addr);
-					FD_SET(client_socket, &client_socks);
+					FD_SET(client_socket, &c_s);
 					info -> count_connections++;
 				}
 				else {
-					
 					int int_ioctl = ioctl(fd, FIONREAD, &a2read);
-					if (int_ioctl >= 0) {						
-						if (a2read > 0) {	
+					if (int_ioctl >= 0) {	
+						client *cl = get_client_by_socket_ID(a_c, fd);
+						if (a2read > 0) {
+							if (FD_ISSET(fd, &errfd)) {
+								delete(&a_c, &w_p, &c_s, &a_g, &info, fd, 1, &cl);
+							}
 							int int_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0);								
 							if (int_recv <= 0) {
-								disconnect(&array_clients, &info, all_games, fd);
+								disconnect(&a_c, &info, a_g, fd, &cl);
 								continue;
+							}
+							if (return_value == 0) {
+								delete(&a_c, &w_p, &c_s, &a_g, &info, fd, 0, &cl);
 							}
 				
 							int contains_semicolon = -1;
@@ -167,27 +168,33 @@ int main(int argc, char *argv[])
 							char *tok = strtok(cbuf, ";");
 							char *type_message = tok;
 							if (strcmp(type_message, "login") == 0) {
-								login(&array_clients, all_games, &info, tok, max_players, fd);
+								login(&a_c, a_g, &info, tok, max_players, fd, &cl);
 							}
 							else if (strcmp(type_message, "play") == 0) {
-								play(&array_clients, &wanna_plays, &all_games, &info, fd);
+								if (cl != NULL) {
+									if (cl -> state == 0) {
+										play(&a_c, &w_p, &a_g, &info, fd, &cl);
+									}
+								}
 							}
 							else if (strcmp(type_message, "client_move") == 0) {
-								client_move(&all_games, &array_clients, &info, tok, fd);							
+								if (cl != NULL) {
+									if (cl -> state == 3) {
+										client_move(&a_g, &a_c, &info, tok);
+									}
+								}							
 							}
 							else if (strcmp(type_message, "new_game_no") == 0) {
-								client *cl = get_client_by_socket_ID(array_clients, fd);
-								if (cl == NULL) continue;
-
 								if (cl -> state == 3 || cl -> state == 4) {
-									client_remove(&array_clients, &wanna_plays, fd);
+									client_remove(&a_c, &w_p, fd);
 								}
 							}
 							else if (strcmp(type_message, "app_end") == 0) {
-								delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 1);
+								FD_CLR(fd, &c_s);
+								delete(&a_c, &w_p, &c_s, &a_g, &info, fd, 1, &cl);
 							}
 							else if (strcmp(type_message, "is_connected") == 0) {
-								client *cl = get_client_by_socket_ID(array_clients, fd);
+								client *cl = get_client_by_socket_ID(a_c, fd);
 								set_connected(&cl, 1);
 								printf("Received message: is_connected\n");
 							}
@@ -197,8 +204,8 @@ int main(int argc, char *argv[])
 												
 						}
 						else {
-							FD_CLR(fd, &client_socks);
-							delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, fd, 1);
+							FD_CLR(fd, &c_s);
+							delete(&a_c, &w_p, &c_s, &a_g, &info, fd, 1, &cl);
 						}						
 					}
 					else {
@@ -246,7 +253,7 @@ int name_exists (clients *array_clients, char *name) {
  * @param info - structures to save log info
  */
 void send_message(int client_socket, char *message, log_info **info) {	
-	printf("Writed message: %s", message);
+	printf("%d Writed message: %s\n", client_socket, message);
 	send(client_socket, message, strlen(message) * sizeof(char), 0);
 	
 	(*info) -> count_bytes += strlen(message) + 1;
@@ -260,9 +267,9 @@ void send_message(int client_socket, char *message, log_info **info) {
  * @param message - message to send to client
  */
 void send_message_no_info(int client_socket, char *message) {	
-	printf("Writed message: %s", message);
+	printf("%d Writed message: %s", client_socket, message);
 	send(client_socket, message, strlen(message) * sizeof(char), 0);
-	
+
 	info -> count_bytes += strlen(message) + 1;
 	info -> count_messages++;
 	return;
@@ -276,21 +283,20 @@ void send_message_no_info(int client_socket, char *message) {
  * @param tok - string send by client containing login info
  * @param max_players - number saying how many client can be logged at one time
  * @param fd - client socket
+ * @param cl - actual client
  */
-void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd) {
-	client *cl = get_client_by_socket_ID(*array_clients, fd);
+void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd, client **client) {
 	tok = strtok(NULL, ";");
 	char *name = tok;
 	if (name_exists((*array_clients), name) == 0) {								
 		if (((*array_clients) -> clients_count) < (max_players)) {			
-			if (cl == NULL) {
+			if ((*client) == NULL) {
 				add_client(array_clients, name, fd);
-				cl = (*array_clients) -> clients[(*array_clients) -> clients_count - 1];
-				pthread_create(&(cl -> client_thread), NULL, &check_connectivity, &cl); 
+				(*client) = (*array_clients) -> clients[(*array_clients) -> clients_count - 1];
+				pthread_create(&((*client) -> client_thread), NULL, &check_connectivity, client); 
 				printf("Name: %s\n", (*array_clients) -> clients[(*array_clients) -> clients_count -1] -> name);
 				char *message = "login_ok;\n";
-				send_message(fd, message, info);	
-				return;				
+				send_message(fd, message, info);					
 			}
 			else {
 				//already logged
@@ -302,9 +308,9 @@ void login(clients **array_clients, games *all_games, log_info **info, char *tok
 		}		
 	}
 	else {
-		cl = get_client_by_name(*array_clients, name);
-		if (cl -> state == 2) {
-			reconnect(array_clients, all_games, info, name, fd, tok, max_players);									
+		(*client) = get_client_by_name(*array_clients, name);
+		if ((*client) -> state == 2) {
+			reconnect(array_clients, all_games, info, name, fd, tok, max_players, client);									
 		}
 		else {
 			char *message = "login_false;2;\n";
@@ -323,43 +329,38 @@ void login(clients **array_clients, games *all_games, log_info **info, char *tok
  * @param fd - client socket
  * @param tok - string send by client containing login info
  * @param max_players - number saying how many client can be logged at one time
+ * @param cl - actual client
  */
-void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players) {
-	client *cl = get_client_by_name(*array_clients, name);
+void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **client) {
+	(*client) -> socket_ID = fd;
 								
 	char board[1024];
 	game *game = find_game_by_name(all_games, name);
 
 	if(game == NULL) {
-		set_state(&cl, 0);
-
-		if (player_wanna_play(wanna_plays, cl)) {
-			set_state(&cl, 1);
+		(*client) -> state = 0; 
+		if (player_wanna_play(w_p, (*client))) {
+			(*client) -> state = 1; 
 			char *message = "already_wanna_play;\n";
 			send_message(fd, message, info);
 		}
 
 		char *message = "login_ok;\n";
 		send_message(fd, message, info);
-
-		set_socket_ID(&cl, fd);
-		pthread_create(&(cl -> client_thread), NULL, &check_connectivity, &cl); 
 		return;
 	}
-	set_socket_ID(&cl, fd);
-	pthread_create(&(cl -> client_thread), NULL, &check_connectivity, &cl); 
 
 	char now_playing[10];
 	if (strcmp(game -> now_playing, name) == 0) { 
-		set_state(&cl, 3);
+		(*client) -> state = 3;
 		strcat(now_playing, "you");  
 	}
 	else {
-		set_state(&cl, 4);
+		(*client) -> state = 4;
 		strcat(now_playing, "opponent");
 	}
 	
-	sprintf(board, "board;%s;%s;%d;%d;%s;", name, cl -> color, game -> game_ID, game -> fields -> count_pieces, now_playing);					
+	sprintf(board, "board;%s;%s;%d;%d;%s;", name, (*client) -> color, game -> game_ID, game -> fields -> count_pieces, now_playing);					
 					
 	int i,j;
 	for (i = 0; i < game -> fields -> size; i++) {
@@ -399,16 +400,12 @@ void reconnect(clients **array_clients, games *all_games, log_info **info, char 
  * @param all_games - array of all games
  * @param info - structures to save log info
  * @param fd - client socket
+ * @param cl - actual client
  */
-void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd) {
-
-	client *cl = get_client_by_socket_ID(*array_clients, fd);
-	if (cl == NULL) return;
-	if (cl -> state != 0) return;
-
+void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd, client **cl) {
 	client *second_client = NULL;
 	add_wanna_play(wanna_plays, fd);
-	set_state(&cl, 1);
+	(*cl) -> state = 1;
 	if (((*wanna_plays) -> size) >= 2) {
 		int socket_ID_1 = fd;
 		int socket_ID_2;
@@ -432,10 +429,10 @@ void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, 
 			sprintf(message_1, "start_game;black;%d;\n", (*all_games) -> games_count);
 			sprintf(message_2, "start_game;white;%d;\n", (*all_games) -> games_count);
 
-			set_state(&cl, 4);
+			set_state(cl, 4);
 			set_state(&second_client, 3);
 
-			set_color(&cl, "black");
+			set_color(cl, "black");
 			set_color(&second_client, "white");
 
 			now_playing = second_client -> name; 		
@@ -444,16 +441,16 @@ void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, 
 			sprintf(message_1, "start_game;white;%d;\n", (*all_games) -> games_count);
 			sprintf(message_2, "start_game;black;%d;\n", (*all_games) -> games_count);
 
-			set_state(&cl, 3);
+			set_state(cl, 3);
 			set_state(&second_client, 4);
 
-			set_color(&cl, "white");
+			set_color(cl, "white");
 			set_color(&second_client, "black");			
 
-			now_playing = cl -> name;
+			now_playing = (*cl) -> name;
 		}
 
-		add_game(all_games, cl -> name, second_client -> name, now_playing);
+		add_game(all_games, (*cl) -> name, second_client -> name, now_playing);
 
 		send_message(socket_ID_1, message_1, info);
 		send_message(socket_ID_2, message_2, info);
@@ -468,12 +465,9 @@ void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, 
  * @param array_clients - array of logged clients
  * @param info - structures to save log info
  * @param tok - text with info about processed move in client
- * @param fd - client socket
  */
-void client_move(games **all_games, clients **array_clients, log_info **info, char *tok, int fd) {
-	client *cl = get_client_by_socket_ID(*array_clients, fd);
-	if (cl == NULL) return;
-	if (cl -> state != 3) return;
+void client_move(games **all_games, clients **array_clients, log_info **info, char *tok) {
+	
 	int i = 0;
 	char *array[10];
 						
@@ -490,12 +484,11 @@ void client_move(games **all_games, clients **array_clients, log_info **info, ch
 	int dp_row = atoi(array[3]);
 	int dp_col = atoi(array[4]);
 	char *color = array[5];
-	char *type = array[6];	
-			
+	char *type = array[6];				
 	printf("Move: GID=%d CP=%d,%d DP=%d,%d COLOR=%s TYPE=%s\n", game_ID, cp_row, cp_col, dp_row, dp_col, color, type);
 							
-	process_move(all_games, *array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, type); 
-	check_can_move(array_clients, all_games, info, game_ID, cp_row, dp_row, color, type);
+	int process = process_move(all_games, *array_clients, info, game_ID, cp_row, cp_col, dp_row, dp_col, color, type); 
+	if (process == 1) check_can_move(array_clients, all_games, info, game_ID, cp_row, dp_row, color, type);
 
 	return;
 }
@@ -521,20 +514,18 @@ void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set
  * @param info - structures to save log info
  * @param all_games - array of all games
  * @param fd - client socket
+ * @param cl - actual client
  */
-void disconnect(clients **array_clients, log_info **info, games *all_games, int fd) {
-	client *cl = get_client_by_socket_ID(*array_clients, fd);
+void disconnect(clients **array_clients, log_info **info, games *all_games, int fd, client **client) {
 
-	if (cl == NULL) return;
-	if (cl -> state == 2) return;
-	
-	set_state(&cl, 2);
+	if (client == NULL) return;
+	if ((*client) -> state == 2) return;
+	(*client) -> state = 2;
 
 	char *second_client_name;
-	game *game = find_game_by_name(all_games, cl -> name);
+	game *game = find_game_by_name(all_games, (*client) -> name);
 	if (game == NULL) return;
-		
-	if (strcmp(game -> name_1, cl -> name) == 0) {
+	if (strcmp(game -> name_1, (*client) -> name) == 0) {
 		second_client_name = game -> name_2;
 	} 
 	else {
@@ -543,7 +534,6 @@ void disconnect(clients **array_clients, log_info **info, games *all_games, int 
 	
 	printf("Opponent with socket ID %d disconnect\n", fd);
 	send_message(get_client_by_name(*array_clients, second_client_name) -> socket_ID, "opponent_connection_lost;\n", info);
-		
 	return;
 }
 
@@ -556,14 +546,14 @@ void disconnect(clients **array_clients, log_info **info, games *all_games, int 
  * @param info - structures to save log info
  * @param fd - client socket
  * @param err_ID - error ID
+ * @param cl - actual client
  */
-void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID) {	
-	client *cl = get_client_by_socket_ID(*array_clients, fd);
-	if (cl == NULL) {
+void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID, client **cl) {	
+	if ((*cl) == NULL) {
 		return;
 	}
-	printf("name: %s, id: %d\n", cl -> name, cl -> socket_ID);	
-	game *gm = find_game_by_name(*all_games, cl -> name);	
+	printf("name: %s, id: %d\n", (*cl) -> name, (*cl) -> socket_ID);	
+	game *gm = find_game_by_name(*all_games, (*cl) -> name);	
 	char message[30];
 
 	switch (err_ID) {
@@ -582,7 +572,7 @@ void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_so
 	printf("Game id %d\n", gm -> game_ID);
 	char *second_client_name;
 
-	if (strcmp(gm -> name_1, cl -> name) == 0) {
+	if (strcmp(gm -> name_1, (*cl) -> name) == 0) {
 		second_client_name = gm -> name_2;
 	} 
 	else {
@@ -685,18 +675,18 @@ int check_if_contains_semicolon(char *cbuf) {
 void *check_connectivity(void *args) {
 	client **cli = (client**) args;	
 	int socket_ID = (*cli) -> socket_ID;
-	char name[30];
-	strcpy((*cli) -> name, name);
 	client *cl = NULL;
 	int disconnected_time = 0;
+	char name[30];
+	strcpy(name, (*cli) -> name);
 	while(1) {
-		cl = get_client_by_socket_ID(array_clients, socket_ID);
+		cl = get_client_by_socket_ID(a_c, socket_ID);
 		printf("Socket ID: %d\n", socket_ID);
 		if (cl == NULL) {
 			printf("Client with socket ID %d is null, deleting thread\n", socket_ID);	
 			break;
 		}
-		if (strcmp(name, cl -> name) != 0) break;
+		if (strcmp(cl -> name, name) != 0) break;
 
 		printf("Client with socket ID %d connected: %d\n", socket_ID, cl -> connected);
 		if (cl -> connected == 1) {
@@ -705,19 +695,19 @@ void *check_connectivity(void *args) {
 			set_disconnected_time(&cl, disconnected_time);
 		}
 		else {
-			disconnect(&array_clients, &info, all_games, socket_ID);
-			
-			if (cl -> disconnected_time == MAX_TIME_DISCONNECT) {
-				delete(&array_clients, &wanna_plays, &client_socks, &all_games, &info, socket_ID, 0);
+			disconnect(&a_c, &info, a_g, socket_ID, &cl);
+
+			if (cl -> disconnected_time == 120) {
+				delete(&a_c, &w_p, &c_s, &a_g, &info, socket_ID, 0, &cl);
 				break;
 			}
-			
+
 			disconnected_time += 15;
 			set_disconnected_time(&cl, disconnected_time);
-			
+
 		}
 		send_message_no_info(cl -> socket_ID, "is_connected;\n");
-		
+
 		sleep(15);
 	}
 	pthread_exit(0);

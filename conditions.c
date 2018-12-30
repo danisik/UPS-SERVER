@@ -668,7 +668,6 @@ int check_if_can_move(games **all_games, int game_ID, int first_position, int se
 		for (j = 0; j < (*all_games) -> games[game_ID] -> fields -> size; j++) {
 			if((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece != NULL) {
 				if(strcmp((*all_games) -> games[game_ID] -> fields -> all_fields[i][j] -> piece -> color, color) == 0) {
-
 					if (strcmp(color, "white") == 0) {
 						value = all_first_move_no_kill(all_games, game_ID, first_position, i, j, i-1, j-1, color);
 						if (value == 1) return 1;

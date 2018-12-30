@@ -92,21 +92,20 @@ struct the_log_info {
 //server.c
 int name_exists (clients *array_clients, char *name);
 void send_message(int client_socket, char *message, log_info **info);
-void send_message_no_info(int client_socket, char *message);
 
-void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd);
-void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players);
-void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd);
-void client_move(games **all_games, clients **array_clients, log_info **info, char *tok, int fd);
+void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd, client **client);
+void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **client);
+void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd, client **cl);
+void client_move(games **all_games, clients **array_clients, log_info **info, char *tok);
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd);
 void log_all(char *filename, log_info *info);
 void server_running(struct timeval start, struct timeval end, log_info **info);
-void disconnect(clients **array_clients, log_info **info, games *all_games, int fd);
-void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID);
+void disconnect(clients **array_clients, log_info **info, games *all_games, int fd, client **client);
+void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID, client **cl);
 void game_info();
 int check_if_contains_semicolon(char *cbuf);
-void *check_connectivity(void *args);
 
+void *check_connectivity(void *args);
 //client.c
 void create_clients(clients **array_clients);
 void create_client(client **cl, char *name, int socket_ID);
@@ -119,6 +118,7 @@ void set_socket_ID(client **cl, int socket_ID);
 void set_color(client **client, char *color);
 void set_connected(client **cl, int connected);
 void set_disconnected_time(client **cl, int disconnected_time);
+
 
 //conditions.c
 int check_can_kill(games **all_games, int game_ID, char *color, char *type);
@@ -144,7 +144,6 @@ int check_if_can_move(games **all_games, int game_ID, int first_position, int se
 void create_wanna_play(wanna_play **wanna_plays);
 void add_wanna_play(wanna_play **wanna_plays, int socket_ID);
 void remove_wanna_play(wanna_play **wanna_plays, int socket_ID);
-int player_wanna_play(wanna_play *wanna_plays, client *cl);
 
 void create_games(games **all_games);
 void inicialize_pieces(fields **fields, char *color, int row, int col);
@@ -153,10 +152,11 @@ void create_game(game **gm, char *name_1, char *name_2, char *now_playing);
 void add_game(games **all_games, char *name_1, char *name_2, char *now_playing);
 void remove_game(clients **cls, games **all_games, log_info **info, int game_ID);
 
-void process_move(games **all_games, clients *clients, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type);
+int process_move(games **all_games, clients *clients, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, char *color, char *type);
 int switch_no_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name);
 int switch_kill(clients **all_clients, int value, games **all_games, log_info **info, int game_ID, int first_position, int cp_row, int cp_col, int dp_row, int dp_col, int curr_pl_socket_ID, int sec_pl_socket_ID, char *sec_pl_name, char *color, char *type);
 game *find_game_by_name(games *all_games, char *name);
 
 void end_game(clients **cls, games **all_games, int game_ID, int status, int status_opponent, int current_player_socket_ID, int second_player_socket_ID, log_info **info);
 void check_can_move(clients **all_clients, games **all_games, log_info **info, int game_ID, int cp_row, int dp_row, char *color, char *type);
+int player_wanna_play(wanna_play *wanna_plays, client *cl);
