@@ -331,16 +331,16 @@ void login(clients **array_clients, games *all_games, log_info **info, char *tok
  * @param max_players - number saying how many client can be logged at one time
  * @param cl - actual client
  */
-void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **client) {
-	(*client) -> socket_ID = fd;
+void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **cl) {
+	(*cl) -> socket_ID = fd;
 								
 	char board[1024];
 	game *game = find_game_by_name(all_games, name);
 
 	if(game == NULL) {
-		(*client) -> state = 0; 
-		if (player_wanna_play(w_p, (*client))) {
-			(*client) -> state = 1; 
+		(*cl) -> state = 0; 
+		if (player_wanna_play(w_p, (*cl))) {
+			(*cl) -> state = 1; 
 			char *message = "already_wanna_play;\n";
 			send_message(fd, message, info);
 		}
@@ -352,15 +352,15 @@ void reconnect(clients **array_clients, games *all_games, log_info **info, char 
 
 	char now_playing[10];
 	if (strcmp(game -> now_playing, name) == 0) { 
-		(*client) -> state = 3;
+		(*cl) -> state = 3;
 		strcat(now_playing, "you");  
 	}
 	else {
-		(*client) -> state = 4;
+		(*cl) -> state = 4;
 		strcat(now_playing, "opponent");
 	}
 	
-	sprintf(board, "board;%s;%s;%d;%d;%s;", name, (*client) -> color, game -> game_ID, game -> fields -> count_pieces, now_playing);					
+	sprintf(board, "board;%s;%s;%d;%d;%s;", name, (*cl) -> color, game -> game_ID, game -> fields -> count_pieces, now_playing);					
 					
 	int i,j;
 	for (i = 0; i < game -> fields -> size; i++) {
@@ -382,12 +382,16 @@ void reconnect(clients **array_clients, games *all_games, log_info **info, char 
 	}
 	strcat(board, "\n");
 	send_message(fd, board, info);
-
+	
 	if (strcmp(game -> name_1, name) == 0) { 
-		send_message(get_client_by_name(*array_clients, game -> name_2) -> socket_ID, "connection_restored;\n", info);
+		client *cl_2 = get_client_by_name(*array_clients, game -> name_2);
+		if (cl_2 -> state == 2) send_message(fd, "opponent_connection_lost;\n", info);
+		else send_message(cl_2 -> socket_ID, "connection_restored;\n", info);
 	}
 	else {
-		send_message(get_client_by_name(*array_clients, game -> name_1) -> socket_ID, "connection_restored;\n", info);	
+		client *cl_2 = get_client_by_name(*array_clients, game -> name_1);
+		if (cl_2 -> state == 2) send_message(fd, "opponent_connection_lost;\n", info);
+		else send_message(cl_2 -> socket_ID, "connection_restored;\n", info);	
 	}
 	return;
 }

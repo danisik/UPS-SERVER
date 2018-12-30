@@ -94,7 +94,7 @@ int name_exists (clients *array_clients, char *name);
 void send_message(int client_socket, char *message, log_info **info);
 
 void login(clients **array_clients, games *all_games, log_info **info, char *tok, int max_players, int fd, client **client);
-void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **client);
+void reconnect(clients **array_clients, games *all_games, log_info **info, char *name, int fd, char *tok, int max_players, client **cl);
 void play(clients **array_clients, wanna_play **wanna_plays, games **all_games, log_info **info, int fd, client **cl);
 void client_move(games **all_games, clients **array_clients, log_info **info, char *tok);
 void delete_connection(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, int fd);
