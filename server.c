@@ -22,6 +22,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <signal.h>
+#include <ctype.h>
 #include <arpa/inet.h>
 #include "header.h"
 
@@ -34,6 +35,7 @@ clients *a_c;
 games *a_g;
 wanna_play *w_p;
 fd_set c_s, tests, errfd;
+int max_players = 32;
 
 
 struct timeval server_start;
@@ -78,7 +80,6 @@ int main(int argc, char *argv[])
 			printf("Wrong parameters set\n");
 			break;
 	}
-	int max_players = 32;
 	remove(filename);
 
 	create_clients(&a_c);
@@ -150,6 +151,7 @@ int main(int argc, char *argv[])
 							if (FD_ISSET(fd, &errfd)) {
 								delete(&a_c, &w_p, &c_s, &a_g, &info, fd, 1, &cl);
 							}
+							memset(cbuf,0, cbuf_size);
 							int int_recv = recv(fd, &cbuf, cbuf_size*sizeof(char), 0);								
 							if (int_recv <= 0) {
 								disconnect(&a_c, &info, a_g, fd, &cl);
@@ -159,6 +161,9 @@ int main(int argc, char *argv[])
 								delete(&a_c, &w_p, &c_s, &a_g, &info, fd, 0, &cl);
 							}
 				
+							int int_validate_input = validate_input(cbuf);
+							if (int_validate_input == 0) continue;
+
 							int contains_semicolon = -1;
 							contains_semicolon = check_if_contains_semicolon(cbuf);
 							
@@ -196,10 +201,8 @@ int main(int argc, char *argv[])
 							else if (strcmp(type_message, "is_connected") == 0) {
 								client *cl = get_client_by_socket_ID(a_c, fd);
 								set_connected(&cl, 1);
-								printf("Received message: is_connected\n");
 							}
 							else {
-								printf("wrong type\n");
 							}	
 												
 						}
@@ -267,7 +270,6 @@ void send_message(int client_socket, char *message, log_info **info) {
  * @param message - message to send to client
  */
 void send_message_no_info(int client_socket, char *message) {	
-	printf("%d Writed message: %s", client_socket, message);
 	send(client_socket, message, strlen(message) * sizeof(char), 0);
 
 	info -> count_bytes += strlen(message) + 1;
@@ -339,12 +341,6 @@ void reconnect(clients **array_clients, games *all_games, log_info **info, char 
 
 	if(game == NULL) {
 		(*cl) -> state = 0; 
-		if (player_wanna_play(w_p, (*cl))) {
-			(*cl) -> state = 1; 
-			char *message = "already_wanna_play;\n";
-			send_message(fd, message, info);
-		}
-
 		char *message = "login_ok;\n";
 		send_message(fd, message, info);
 		return;
@@ -676,6 +672,19 @@ int check_if_contains_semicolon(char *cbuf) {
 	else return 1;
 }
 
+int validate_input(char *cbuf) {
+	int i;
+	for (i = 0; i < strlen(cbuf); i++) {
+		if (!isascii(cbuf[i])) return 0; 
+		else {
+			if (i < (strlen(cbuf) - 1)) {
+				if ( (cbuf[i] == ';') && (cbuf[i+1] == 10) ) break;
+			}
+		}
+	}
+	return 1;
+}
+
 void *check_connectivity(void *args) {
 	client **cli = (client**) args;	
 	int socket_ID = (*cli) -> socket_ID;
@@ -685,34 +694,36 @@ void *check_connectivity(void *args) {
 	strcpy(name, (*cli) -> name);
 	while(1) {
 		cl = get_client_by_socket_ID(a_c, socket_ID);
-		printf("Socket ID: %d\n", socket_ID);
 		if (cl == NULL) {
 			printf("Client with socket ID %d is null, deleting thread\n", socket_ID);	
 			break;
 		}
 		if (strcmp(cl -> name, name) != 0) break;
 
-		printf("Client with socket ID %d connected: %d\n", socket_ID, cl -> connected);
 		if (cl -> connected == 1) {
 			set_connected(&cl, 0);
-			disconnected_time += 0;
+			if (disconnected_time > 0) {
+				reconnect(&a_c, a_g, &info, cl -> name, cl -> socket_ID, NULL, max_players, &cl);
+			}
+			disconnected_time = 0;			
 			set_disconnected_time(&cl, disconnected_time);
 		}
 		else {
 			disconnect(&a_c, &info, a_g, socket_ID, &cl);
+			remove_wanna_play(&w_p, cl -> socket_ID);
 
 			if (cl -> disconnected_time == 120) {
 				delete(&a_c, &w_p, &c_s, &a_g, &info, socket_ID, 0, &cl);
 				break;
 			}
 
-			disconnected_time += 15;
+			disconnected_time += 1;
 			set_disconnected_time(&cl, disconnected_time);
 
 		}
 		send_message_no_info(cl -> socket_ID, "is_connected;\n");
 
-		sleep(15);
+		sleep(1);
 	}
 	pthread_exit(0);
 }

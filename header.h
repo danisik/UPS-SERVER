@@ -81,8 +81,8 @@ struct the_games {
 };
 
 struct the_log_info {
-	int count_bytes; 
-	int count_messages; 
+	int32_t count_bytes; 
+	int32_t count_messages; 
 	int count_connections;
 	int count_bad_transmissions;
 	int server_running_minutes;
@@ -104,6 +104,7 @@ void disconnect(clients **array_clients, log_info **info, games *all_games, int 
 void delete(clients **array_clients, wanna_play **wanna_plays, fd_set *client_socks, games **all_games, log_info **info, int fd, int err_ID, client **cl);
 void game_info();
 int check_if_contains_semicolon(char *cbuf);
+int validate_input(char *cbuf);
 
 void *check_connectivity(void *args);
 //client.c
